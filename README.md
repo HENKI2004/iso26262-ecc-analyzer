@@ -1,4 +1,4 @@
-# ECC Analyzer (Beachlore Safety)
+# ECC Analyzer
 
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
