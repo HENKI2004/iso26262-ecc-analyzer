@@ -1,0 +1,19 @@
+name: Mirror to GitLab
+
+on:
+  push:
+    branches:
+      - master  
+      
+jobs:
+  gitlab-mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+          
+      - name: Push Master to GitLab
+        run: |
+          git push --force --prune https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab2.informatik.uni-wuerzburg.de/ce/thesis/ba-linusheld/iso26262-ecc-analyzer.git "refs/heads/*:refs/heads/*" "refs/tags/*:refs/tags/*"
