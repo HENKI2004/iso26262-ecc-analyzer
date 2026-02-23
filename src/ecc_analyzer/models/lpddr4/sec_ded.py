@@ -2,7 +2,7 @@
 
 # Copyright (c) 2025 Linus Held. All rights reserved.
 
-from ...core import Base, BasicEvent, CoverageBlock, SumBlock, TransformationBlock
+from ...core import Base, BasicEvent, CoverageBlock, SplitBlock, SumBlock
 from ...interfaces import FaultType
 
 
@@ -38,13 +38,24 @@ class SecDed(Base):
         self.root_block = SumBlock(
             self.name,
             [
-                BasicEvent(FaultType.SDB, self.sdb_source, is_spfm=False),
-                CoverageBlock(FaultType.SBE, self.lfm_sbe_dc, is_spfm=False),
-                CoverageBlock(FaultType.DBE, self.lfm_dbe_dc, is_spfm=False),
-                TransformationBlock(FaultType.TBE, FaultType.MBE, self.tbe_split_to_mbe),
-                CoverageBlock(FaultType.SBE, self.sbe_dc),
-                CoverageBlock(FaultType.DBE, self.dbe_dc),
-                CoverageBlock(FaultType.TBE, self.tbe_dc),
-                CoverageBlock(FaultType.MBE, self.mbe_dc),
+                BasicEvent("sec_dec", FaultType.SDB, self.sdb_source, is_spfm=False),
+                CoverageBlock("sec_dec", FaultType.SBE, self.lfm_sbe_dc, is_spfm=False),
+                CoverageBlock("sec_dec", FaultType.DBE, self.lfm_dbe_dc, is_spfm=False),
+                SumBlock(
+                    "test",
+                    [
+                        SplitBlock(
+                            "sec_ded_tbe_split_to_mbe",
+                            FaultType.TBE,
+                            {
+                                FaultType.TBE: self.tbe_split_to_mbe,
+                            },
+                        ),
+                        CoverageBlock("sec_dec", FaultType.TBE, self.tbe_dc),
+                    ],
+                ),
+                CoverageBlock("sec_dec", FaultType.SBE, self.sbe_dc),
+                CoverageBlock("sec_dec", FaultType.DBE, self.dbe_dc),
+                CoverageBlock("sec_dec", FaultType.MBE, self.mbe_dc),
             ],
         )

@@ -14,9 +14,9 @@ from ..core import (
     PipelineBlock,
     SplitBlock,
     SumBlock,
-    TransformationBlock,
 )
 from ..interfaces import FaultType, SafetyObserver
+from .html_templates import get_coverage_label
 
 # --- Type Definitions for better readability ---
 PortMap: TypeAlias = dict[str, Optional[str]]
@@ -259,8 +259,6 @@ class SafetyVisualizer(SafetyObserver):
                 container,
                 predecessors,
             )
-        elif isinstance(block, TransformationBlock):
-            return self._draw_transformation_block(block, input_ports, spfm_out, lfm_out, container)
         elif isinstance(block, Base):
             cluster_name = f"{self.PREFIX_CLUSTER_COMP}{id(block)}"
             with container.subgraph(name=cluster_name) as c:
@@ -524,28 +522,7 @@ class SafetyVisualizer(SafetyObserver):
         """Draws a CoverageBlock as a fixed-size HTML table."""
         node_id = self._get_node_id(self.PREFIX_NODE_COV, block)
 
-        rf_percent = (1.0 - block.c_R) * 100
-        lat_percent = (1.0 - block.c_L) * 100
-
-        width_total = int(self.BLOCK_WIDTH_PIXEL)
-        cell_width = width_total // 2
-
-        label = (
-            f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" WIDTH="{width_total}" '
-            f'HEIGHT="{self.BLOCK_HEIGHT_PIXEL}" FIXEDSIZE="TRUE">'
-            f"<TR>"
-            f'<TD PORT="rf" WIDTH="{cell_width}" HEIGHT="{self.DATA_HEIGHT}" '
-            f'BGCOLOR="{self.COLOR_BG}"><FONT POINT-SIZE="{self.FONT_SIZE_DATA}">'
-            f"{rf_percent:.1f}%</FONT></TD>"
-            f'<TD PORT="latent" WIDTH="{cell_width}" HEIGHT="{self.DATA_HEIGHT}" '
-            f'BGCOLOR="{self.COLOR_BG}"><FONT POINT-SIZE="{self.FONT_SIZE_DATA}">'
-            f"{lat_percent:.1f}%</FONT></TD>"
-            f"</TR>"
-            f"<TR>"
-            f'<TD COLSPAN="2" WIDTH="{width_total}" HEIGHT="{self.HEADER_HEIGHT}" '
-            f'BGCOLOR="{self.COLOR_HEADER}"><B>Coverage</B></TD>'
-            f"</TR></TABLE>>"
-        )
+        label = get_coverage_label(block.c_R, block.c_L)
 
         path_type = self.PATH_TYPE_RF if block.is_spfm else self.PATH_TYPE_LATENT
         group_id = self._get_lane_id(block.target_fault.name, path_type)
@@ -752,7 +729,6 @@ class SafetyVisualizer(SafetyObserver):
                         (
                             CoverageBlock,
                             SplitBlock,
-                            TransformationBlock,
                             PipelineBlock,
                         ),
                     )
@@ -819,57 +795,6 @@ class SafetyVisualizer(SafetyObserver):
                 )
 
         return final_ports
-
-    def _draw_transformation_block(
-        self,
-        block: TransformationBlock,
-        input_ports: FlowMap,
-        spfm_out: dict,
-        lfm_out: dict,
-        container: Digraph,
-    ) -> FlowMap:
-        """Draws a TransformationBlock as a fixed-size HTML table."""
-        node_id = f"{self.PREFIX_NODE_TRANS}{block.source.name}_to_{block.target.name}_{id(block)}"
-        percent_label = f"{block.factor * 100:.1f}%"
-        width_total = int(self.BLOCK_WIDTH_PIXEL)
-
-        label = (
-            f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" WIDTH="{width_total}" '
-            f'HEIGHT="{self.BLOCK_HEIGHT_PIXEL}" FIXEDSIZE="TRUE">'
-            f"<TR>"
-            f'<TD PORT="out" WIDTH="{width_total}" HEIGHT="{self.DATA_HEIGHT}" '
-            f'BGCOLOR="{self.COLOR_BG}"><FONT POINT-SIZE="{self.FONT_SIZE_DATA}">'
-            f"{percent_label}</FONT></TD>"
-            f"</TR>"
-            f"<TR>"
-            f'<TD WIDTH="{width_total}" HEIGHT="{self.HEADER_HEIGHT}" '
-            f'BGCOLOR="{self.COLOR_HEADER}"><B>Transf.</B></TD>'
-            f"</TR></TABLE>>"
-        )
-
-        group_id = self._get_lane_id(block.source.name, self.PATH_TYPE_RF)
-        container.node(node_id, label=label, shape="none", group=group_id)
-
-        source_ports = input_ports.get(block.source, {})
-        source_node = source_ports.get(self.PATH_TYPE_RF)
-
-        if source_node:
-            container.edge(
-                source_node,
-                f"{node_id}:{self.COMPASS_SOUTH}",
-                color=self.COLOR_RF,
-                minlen="2",
-            )
-
-        new_ports = input_ports.copy()
-        prev_target_ports = input_ports.get(block.target, {self.PATH_TYPE_RF: None, self.PATH_TYPE_LATENT: None})
-
-        new_ports[block.target] = {
-            self.PATH_TYPE_RF: f"{node_id}:out:{self.COMPASS_NORTH}",
-            self.PATH_TYPE_LATENT: prev_target_ports[self.PATH_TYPE_LATENT],
-        }
-
-        return new_ports
 
     def render(self, filename: str):
         """Exports the current graph to a PDF file.

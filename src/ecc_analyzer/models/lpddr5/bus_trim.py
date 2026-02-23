@@ -47,8 +47,5 @@ class BusTrim(Base):
                 SplitBlock("BUS_SPFM_SBE_Split", FaultType.SBE, self.spfm_sbe_split, is_spfm=True),
                 SplitBlock("BUS_SPFM_DBE_Split", FaultType.DBE, self.spfm_dbe_split, is_spfm=True),
                 SplitBlock("BUS_SPFM_TBE_Split", FaultType.TBE, self.spfm_tbe_split, is_spfm=True),
-                SplitBlock("BUS_LFM_SBE_Split", FaultType.SBE, self.lfm_sbe_split, is_spfm=False),
-                SplitBlock("BUS_LFM_DBE_Split", FaultType.DBE, self.lfm_dbe_split, is_spfm=False),
-                SplitBlock("BUS_LFM_TBE_Split", FaultType.TBE, self.lfm_tbe_split, is_spfm=False),
             ],
         )

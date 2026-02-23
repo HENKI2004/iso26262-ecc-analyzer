@@ -44,12 +44,12 @@ class BusTrim(Base):
         self.root_block = SumBlock(
             self.name,
             [
-                BasicEvent(FaultType.MBE, self.spfm_mbe_source, is_spfm=True),
-                BasicEvent(FaultType.AZ, self.spfm_az_source, is_spfm=True),
-                SplitBlock("SPFM_SBE_Split", FaultType.SBE, self.spfm_sbe_split, is_spfm=True),
-                SplitBlock("SPFM_DBE_Split", FaultType.DBE, self.spfm_dbe_split, is_spfm=True),
-                SplitBlock("SPFM_TBE_Split", FaultType.TBE, self.spfm_tbe_split, is_spfm=True),
-                SplitBlock("LFM_SBE_Split", FaultType.SBE, self.lfm_sbe_split, is_spfm=False),
-                SplitBlock("LFM_DBE_Split", FaultType.DBE, self.lfm_dbe_split, is_spfm=False),
+                BasicEvent("bus", FaultType.MBE, self.spfm_mbe_source, is_spfm=True),
+                BasicEvent("bus", FaultType.AZ, self.spfm_az_source, is_spfm=True),
+                SplitBlock("bus_SPFM_SBE_Split", FaultType.SBE, self.spfm_sbe_split, is_spfm=True),
+                SplitBlock("bus_SPFM_DBE_Split", FaultType.DBE, self.spfm_dbe_split, is_spfm=True),
+                SplitBlock("bus_SPFM_TBE_Split", FaultType.TBE, self.spfm_tbe_split, is_spfm=True),
+                SplitBlock("bus_LFM_SBE_Split", FaultType.SBE, self.lfm_sbe_split, is_spfm=False),
+                SplitBlock("bus_LFM_DBE_Split", FaultType.DBE, self.lfm_dbe_split, is_spfm=False),
             ],
         )

@@ -38,9 +38,9 @@ class Sec(Base):
         self.root_block = SumBlock(
             self.name,
             [
-                BasicEvent(FaultType.SB, self.sb_source, is_spfm=False),
-                BasicEvent(FaultType.DBE, self.dbe_source, is_spfm=False),
-                CoverageBlock(FaultType.SBE, self.sec_ecc_dc),
+                BasicEvent("sec", FaultType.SB, self.sb_source, is_spfm=False),
+                BasicEvent("sec", FaultType.DBE, self.dbe_source, is_spfm=False),
+                CoverageBlock("sec", FaultType.SBE, self.sec_ecc_dc),
                 SplitBlock(
                     "DBE_to_TBE_Split",
                     FaultType.DBE,

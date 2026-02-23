@@ -28,4 +28,4 @@ class OtherComponents(Base):
         Uses a SumBlock as the base container for the fault source (BasicEvent).
         The fault is injected into the residual path (is_spfm=True).
         """
-        self.root_block = SumBlock(self.name, [BasicEvent(FaultType.OTH, self.source_rate, is_spfm=True)])
+        self.root_block = SumBlock(self.name, [BasicEvent("OTH", FaultType.OTH, self.source_rate, is_spfm=True)])

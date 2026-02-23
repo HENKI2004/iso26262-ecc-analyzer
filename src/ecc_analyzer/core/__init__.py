@@ -11,7 +11,6 @@ from .observable_block import ObservableBlock
 from .pipeline_block import PipelineBlock
 from .split_block import SplitBlock
 from .sum_block import SumBlock
-from .transformation_block import TransformationBlock
 
 __all__ = [
     "AsilBlock",
@@ -22,6 +21,5 @@ __all__ = [
     "PipelineBlock",
     "SplitBlock",
     "SumBlock",
-    "TransformationBlock",
     "BlockFactory",
 ]

@@ -6,7 +6,6 @@ from ecc_analyzer.core.coverage_block import CoverageBlock
 from ecc_analyzer.core.pipeline_block import PipelineBlock
 from ecc_analyzer.core.split_block import SplitBlock
 from ecc_analyzer.core.sum_block import SumBlock
-from ecc_analyzer.core.transformation_block import TransformationBlock
 from ecc_analyzer.interfaces.fault_type import FaultType
 
 # --- Tests for simple blocks ---
@@ -32,16 +31,6 @@ def test_from_dict_coverage_block():
     assert block.target_fault == FaultType.DBE
     assert block.c_R == 0.95
     assert block.c_L == 0.8
-
-
-def test_from_dict_transformation_block():
-    """Verify creation of a TransformationBlock."""
-    data = {"type": "TransformationBlock", "source_fault": "SBE", "target_fault": "MBE", "factor": 0.1}
-    block = BlockFactory.from_dict(data)
-
-    assert isinstance(block, TransformationBlock)
-    assert block.source == FaultType.SBE
-    assert block.target == FaultType.MBE
 
 
 # --- Tests for complex data structures ---

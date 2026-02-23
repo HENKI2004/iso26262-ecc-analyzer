@@ -10,7 +10,6 @@ from .coverage_block import CoverageBlock
 from .pipeline_block import PipelineBlock
 from .split_block import SplitBlock
 from .sum_block import SumBlock
-from .transformation_block import TransformationBlock
 
 
 class BlockFactory:
@@ -27,7 +26,6 @@ class BlockFactory:
         "BasicEvent": BasicEvent,
         "CoverageBlock": CoverageBlock,
         "SplitBlock": SplitBlock,
-        "TransformationBlock": TransformationBlock,
     }
 
     @staticmethod
