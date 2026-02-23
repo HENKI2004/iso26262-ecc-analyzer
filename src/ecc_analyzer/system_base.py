@@ -6,6 +6,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
+import sympy
 import yaml
 
 from .core import AsilBlock, BlockFactory, ObservableBlock
@@ -132,3 +133,42 @@ class SystemBase(ABC):
         with open(file_path, "r") as f:
             data = json.load(f)
         self.system_layout = BlockFactory.from_dict(data)
+
+    def get_symbolic_metrics(self, mode: str = "be_vars") -> dict[str, sympy.Expr]:
+        """
+
+        Args:
+            mode:
+                "all_vars": Alles (FIT-Raten, DCs, Splits) wird als Variable dargestellt.
+                "be_vars": Nur FIT-Raten der Basic Events sind Variablen, DCs sind Zahlen.
+                "numeric": Alle Werte sind eingesetzt (Formel-Check).
+        """
+        be_symbols = []
+
+        def collect_be_lambda(block, mode):
+            lambdas = []
+            if hasattr(block, "lambda_BE"):
+                if mode in ["all_vars", "be_vars"]:
+                    lambdas.append(sympy.Symbol(f"lambda_{block.name}_{block.fault_type.name}"))
+                else:
+                    lambdas.append(block.lambda_BE)
+            elif hasattr(block, "sub_blocks"):
+                for sub in block.sub_blocks:
+                    lambdas.extend(collect_be_lambda(sub, mode))
+            return lambdas
+
+        all_lambdas = collect_be_lambda(self.system_layout, mode)
+        lambda_total_expr = 4200.00
+
+        final_spfm_exprs, final_lfm_exprs = self.system_layout.compute_symbolic_fit({}, {}, mode)
+
+        lambda_rf_sum = sympy.Add(*final_spfm_exprs.values()) if final_spfm_exprs else sympy.Integer(0)
+
+        lambda_latent_sum = sympy.Add(*final_lfm_exprs.values()) if final_lfm_exprs else sympy.Integer(0)
+
+        spfm_formula = 1 - (lambda_rf_sum / lambda_total_expr)
+
+        denominator_lfm = lambda_total_expr - lambda_rf_sum
+        lfm_formula = 1 - (lambda_latent_sum / denominator_lfm) if denominator_lfm != 0 else sympy.Integer(0)
+
+        return {"mode": mode, "SPFM": sympy.simplify(spfm_formula), "LFM": sympy.simplify(lfm_formula), "Lambda_RF": sympy.simplify(lambda_rf_sum), "Lambda_Total": sympy.simplify(lambda_total_expr)}

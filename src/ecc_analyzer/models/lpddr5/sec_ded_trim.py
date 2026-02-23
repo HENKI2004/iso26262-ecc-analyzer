@@ -41,11 +41,11 @@ class SecDedTrim(Base):
         self.root_block = SumBlock(
             self.name,
             [
-                SplitBlock("SPFM_SBE_Split", FaultType.SBE, self.spfm_sbe_split, is_spfm=True),
-                SplitBlock("SPFM_DBE_Split", FaultType.DBE, self.spfm_dbe_split, is_spfm=True),
-                SplitBlock("SPFM_TBE_Split", FaultType.TBE, self.spfm_tbe_split, is_spfm=True),
-                SplitBlock("LFM_SBE_Split", FaultType.SBE, self.lfm_sbe_split, is_spfm=False),
-                SplitBlock("LFM_DBE_Split", FaultType.DBE, self.lfm_dbe_split, is_spfm=False),
-                SplitBlock("LFM_TBE_Split", FaultType.TBE, self.lfm_tbe_split, is_spfm=False),
+                SplitBlock("Sec_Trim_SPFM_SBE_Split", FaultType.SBE, self.spfm_sbe_split, is_spfm=True),
+                SplitBlock("Sec_Trim_SPFM_DBE_Split", FaultType.DBE, self.spfm_dbe_split, is_spfm=True),
+                SplitBlock("Sec_Trim_SPFM_TBE_Split", FaultType.TBE, self.spfm_tbe_split, is_spfm=True),
+                SplitBlock("Sec_Trim_LFM_SBE_Split", FaultType.SBE, self.lfm_sbe_split, is_spfm=False),
+                SplitBlock("Sec_Trim_LFM_DBE_Split", FaultType.DBE, self.lfm_dbe_split, is_spfm=False),
+                SplitBlock("Sec_Trim_LFM_TBE_Split", FaultType.TBE, self.lfm_tbe_split, is_spfm=False),
             ],
         )

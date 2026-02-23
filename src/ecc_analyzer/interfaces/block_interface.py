@@ -4,6 +4,8 @@
 
 from abc import ABC, abstractmethod
 
+import sympy
+
 from .fault_type import FaultType
 
 
@@ -39,4 +41,8 @@ class BlockInterface(ABC):
         Returns:
             dict: the created dictionary which represents the block
         """
+        pass
+
+    @abstractmethod
+    def compute_symbolic_fit(self, spfm_exprs: dict[FaultType, sympy.Expr], lfm_exprs: dict[FaultType, sympy.Expr], mode: str) -> tuple[dict[FaultType, sympy.Expr], dict[FaultType, sympy.Expr]]:
         pass

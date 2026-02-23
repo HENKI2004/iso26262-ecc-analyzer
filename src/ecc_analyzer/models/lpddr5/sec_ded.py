@@ -44,7 +44,7 @@ class SecDed(Base):
             "SEC_DED_Processing",
             [
                 SplitBlock(
-                    "TBE_to_MBE_Split",
+                    "Sec_ded_TBE_to_MBE_Split",
                     FaultType.TBE,
                     {
                         FaultType.MBE: self.tbe_split_to_mbe,
@@ -53,19 +53,21 @@ class SecDed(Base):
                     is_spfm=True,
                 ),
                 CoverageBlock(
+                    "Sec_ded",
                     FaultType.SBE,
                     self.sbe_dc,
                     dc_rate_latent_cL=self.lfm_sbe_dc,
                     is_spfm=True,
                 ),
                 CoverageBlock(
+                    "Sec_ded",
                     FaultType.DBE,
                     self.dbe_dc,
                     dc_rate_latent_cL=self.lfm_dbe_dc,
                     is_spfm=True,
                 ),
-                CoverageBlock(FaultType.TBE, self.tbe_dc, is_spfm=True),
-                CoverageBlock(FaultType.MBE, self.mbe_dc, is_spfm=True),
+                CoverageBlock("Sec_ded", FaultType.TBE, self.tbe_dc, is_spfm=True),
+                CoverageBlock("Sec_ded", FaultType.MBE, self.mbe_dc, is_spfm=True),
             ],
         )
 
@@ -73,6 +75,6 @@ class SecDed(Base):
             self.name,
             [
                 spfm_pipeline,
-                BasicEvent(FaultType.SDB, self.sdb_source, is_spfm=False),
+                BasicEvent("Sec_ded", FaultType.SDB, self.sdb_source, is_spfm=False),
             ],
         )

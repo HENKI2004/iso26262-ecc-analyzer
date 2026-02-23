@@ -54,3 +54,12 @@ class PipelineBlock(BlockInterface):
         """
 
         return {"type": "PipelineBlock", "name": self.name, "sub_blocks": [block.to_dict() for block in self.sub_blocks]}
+
+    def compute_symbolic_fit(self, spfm_exprs, lfm_exprs, mode):
+        current_spfm = spfm_exprs.copy()
+        current_lfm = lfm_exprs.copy()
+
+        for block in self.sub_blocks:
+            current_spfm, current_lfm = block.compute_symbolic_fit(current_spfm, current_lfm, mode)
+
+        return current_spfm, current_lfm

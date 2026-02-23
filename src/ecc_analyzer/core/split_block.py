@@ -2,6 +2,8 @@
 
 # Copyright (c) 2025 Linus Held. All rights reserved.
 
+import sympy
+
 from ..interfaces import BlockInterface, FaultType
 
 
@@ -81,3 +83,17 @@ class SplitBlock(BlockInterface):
             "distribution_rates": {fault.name: rate for fault, rate in self.distribution_rates.items()},
             "is_spfm": self.is_spfm,
         }
+
+    def compute_symbolic_fit(self, spfm_exprs, lfm_exprs, mode):
+        new_spfm = spfm_exprs.copy()
+        new_lfm = lfm_exprs.copy()
+        target_dict = new_spfm if self.is_spfm else new_lfm
+
+        if self.fault_to_split in target_dict:
+            original_rate = target_dict.pop(self.fault_to_split)
+            for target_fault, probability in self.distribution_rates.items():
+                p_val = sympy.Symbol(f"p_{self.name}_{target_fault.name}") if mode == "all_vars" else probability
+                split_rate = original_rate * p_val
+                target_dict[target_fault] = target_dict.get(target_fault, 0) + split_rate
+
+        return new_spfm, new_lfm

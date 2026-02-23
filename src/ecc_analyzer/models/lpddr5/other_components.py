@@ -32,6 +32,6 @@ class OtherComponents(Base):
         self.root_block = SumBlock(
             self.name,
             [
-                BasicEvent(FaultType.OTH, self.other_rf_source, is_spfm=True),
+                BasicEvent("OTH", FaultType.OTH, self.other_rf_source, is_spfm=True),
             ],
         )

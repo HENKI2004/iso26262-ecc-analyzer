@@ -56,3 +56,6 @@ class Base(BlockInterface, ABC):
     def to_dict(self) -> dict:
         """Serializes the component by delegating to its internal root block."""
         return {"type": self.__class__.__name__, "name": self.name, "root_block": self.root_block.to_dict() if self.root_block else None}
+
+    def compute_symbolic_fit(self, spfm_exprs, lfm_exprs, mode):
+        return self.root_block.compute_symbolic_fit(spfm_exprs, lfm_exprs, mode)

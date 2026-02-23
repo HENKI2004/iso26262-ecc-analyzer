@@ -39,15 +39,16 @@ class Sec(Base):
         self.root_block = SumBlock(
             self.name,
             [
-                BasicEvent(FaultType.SB, self.sb_source, is_spfm=False),
+                BasicEvent("Sec", FaultType.SB, self.sb_source, is_spfm=False),
                 CoverageBlock(
+                    "Sec",
                     FaultType.SBE,
                     self.sbe_dc_residual,
                     dc_rate_latent_cL=self.sbe_dc_latent,
                     is_spfm=True,
                 ),
                 SplitBlock(
-                    "DBE_Split",
+                    "Sec_DBE_Split",
                     FaultType.DBE,
                     {
                         FaultType.DBE: self.dbe_to_dbe_p,

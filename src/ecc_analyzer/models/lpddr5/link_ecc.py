@@ -35,8 +35,9 @@ class LinkEcc(Base):
         self.root_block = PipelineBlock(
             self.name,
             [
-                BasicEvent(FaultType.SBE, self.sbe_if_source_rate, is_spfm=True),
+                BasicEvent("Link", FaultType.SBE, self.sbe_if_source_rate, is_spfm=True),
                 CoverageBlock(
+                    "Link",
                     FaultType.SBE,
                     self.sbe_if_dc_residual,
                     dc_rate_latent_cL=self.sbe_if_dc_latent,

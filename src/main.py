@@ -1,6 +1,7 @@
 """Zentraler Einstiegspunkt zur Ausführung der Sicherheitsanalysen (LPDDR4 & LPDDR5)."""
 
-from ecc_analyzer.models.lpddr4 import Lpddr4System
+import sympy
+
 from ecc_analyzer.models.lpddr5 import Lpddr5System
 
 
@@ -53,18 +54,44 @@ def run_analysis_for_system(system, pipeline_name_for_detail="DRAM_Path"):
     print(f" ASIL:             {metrics['ASIL_Achieved']}")
     print("=" * 60)
 
-    pdf_name = f"{system.name}_Report"
-    print(f"Generiere PDF: {pdf_name}.pdf ...")
-    system.generate_pdf(pdf_name)
+    # pdf_name = f"{system.name}_Report"
+    # print(f"Generiere PDF: {pdf_name}.pdf ...")
+    # system.generate_pdf(pdf_name)
     print("Fertig.\n")
 
 
 def main():
-    lpddr4 = Lpddr4System("LPDDR4_System", total_fit=4220.0)
-    run_analysis_for_system(lpddr4)
+    # lpddr4 = Lpddr4System("LPDDR4_System", total_fit=4220.0)
+    # run_analysis_for_system(lpddr4)
 
     lpddr5 = Lpddr5System("LPDDR5_System", total_fit=4200.0)
     run_analysis_for_system(lpddr5)
+
+    metrics = lpddr5.get_symbolic_metrics(mode="be_vars")
+    spfm_expr = metrics["SPFM"]
+
+    dram_fit = 2300.0
+
+    substitutions = {
+        sympy.Symbol("lambda_Bus_AZ"): 172.0,
+        sympy.Symbol("lambda_Events_DBE"): 0.0748 * dram_fit,
+        sympy.Symbol("lambda_Events_MBE"): 0.0748 * dram_fit,
+        sympy.Symbol("lambda_Events_WD"): 0.0748 * dram_fit,
+        sympy.Symbol("lambda_OTH_OTH"): 9.5,
+    }
+
+    ergebnis = spfm_expr.subs(substitutions).evalf()
+    print(f"Berechneter SPFM: {ergebnis}%")
+
+    metrics = lpddr5.get_symbolic_metrics(mode="all_vars")
+    spfm_expr = metrics["SPFM"]
+
+    target_var = sympy.Symbol("c_R_SEC")
+
+    spfm_derivative = sympy.diff(spfm_expr, target_var)
+
+    print(f"Ableitung nach {target_var}:")
+    print(sympy.simplify(spfm_derivative))
 
 
 if __name__ == "__main__":

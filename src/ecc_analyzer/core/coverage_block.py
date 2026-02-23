@@ -4,6 +4,8 @@
 
 from typing import Optional
 
+import sympy
+
 from ..interfaces import BlockInterface, FaultType
 
 
@@ -16,6 +18,7 @@ class CoverageBlock(BlockInterface):
 
     def __init__(
         self,
+        name: str,
         target_fault: FaultType,
         dc_rate_c_or_cR: float,
         dc_rate_latent_cL: Optional[float] = None,
@@ -32,6 +35,7 @@ class CoverageBlock(BlockInterface):
             is_spfm (bool, optional): Indicates if this block processes the SPFM/residual
                 path. Defaults to True.
         """
+        self.name = name
         self.target_fault = target_fault
         self.is_spfm = is_spfm
         if dc_rate_latent_cL is not None:
@@ -83,3 +87,28 @@ class CoverageBlock(BlockInterface):
         """
 
         return {"type": "CoverageBlock", "target_fault": self.target_fault.name, "dc_rate_c_or_cR": self.c_R, "dc_rate_latent_cL": self.c_L, "is_spfm": self.is_spfm}
+
+    def compute_symbolic_fit(self, spfm_exprs, lfm_exprs, mode):
+        new_spfm = spfm_exprs.copy()
+        new_lfm = lfm_exprs.copy()
+
+        if mode == "all_vars":
+            c_r_val = sympy.Symbol(f"c_R_{self.name}_{self.target_fault.name}")
+            c_l_val = sympy.Symbol(f"c_L_{self.name}_{self.target_fault.name}")
+        else:
+            c_r_val = self.c_R
+            c_l_val = self.c_L
+
+        if self.is_spfm:
+            if self.target_fault in new_spfm:
+                lambda_in = new_spfm.pop(self.target_fault)
+                # Residual-Anteil
+                new_spfm[self.target_fault] = new_spfm.get(self.target_fault, 0) + lambda_in * (1.0 - c_r_val)
+                # Latent-Anteil
+                new_lfm[self.target_fault] = new_lfm.get(self.target_fault, 0) + lambda_in * (1.0 - c_l_val)
+        else:
+            if self.target_fault in new_lfm:
+                lambda_in = new_lfm.pop(self.target_fault)
+                new_lfm[self.target_fault] = lambda_in * (1.0 - c_r_val)
+
+        return new_spfm, new_lfm

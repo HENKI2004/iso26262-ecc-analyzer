@@ -2,6 +2,8 @@
 
 # Copyright (c) 2025 Linus Held. All rights reserved.
 
+import sympy
+
 from ..interfaces import BlockInterface, FaultType
 
 
@@ -11,7 +13,7 @@ class BasicEvent(BlockInterface):
     This class handles the mathematical addition of failure rates to the fault dictionaries.
     """
 
-    def __init__(self, fault_type: FaultType, rate: float, is_spfm: bool = True):
+    def __init__(self, name: str, fault_type: FaultType, rate: float, is_spfm: bool = True):
         """Initializes the BasicEvent fault source.
 
         Args:
@@ -20,6 +22,7 @@ class BasicEvent(BlockInterface):
             is_spfm (bool, optional): Whether this rate counts towards SPFM (True)
                 or LFM (False). Defaults to True.
         """
+        self.name = name
         self.fault_type = fault_type
         self.lambda_BE = rate
         self.is_spfm = is_spfm
@@ -53,3 +56,17 @@ class BasicEvent(BlockInterface):
         """
 
         return {"type": "BasicEvent", "fault_type": self.fault_type.name, "rate": self.lambda_BE, "is_spfm": self.is_spfm}
+
+    def compute_symbolic_fit(self, spfm_exprs, lfm_exprs, mode):
+        new_spfm = spfm_exprs.copy()
+        new_lfm = lfm_exprs.copy()
+
+        if mode in ["all_vars", "be_vars"]:
+            val = sympy.Symbol(f"lambda_{self.name}_{self.fault_type.name}")
+        else:
+            val = self.lambda_BE
+
+        target_dict = new_spfm if self.is_spfm else new_lfm
+        target_dict[self.fault_type] = target_dict.get(self.fault_type, 0) + val
+
+        return new_spfm, new_lfm

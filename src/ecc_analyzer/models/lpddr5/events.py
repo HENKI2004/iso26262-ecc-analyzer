@@ -36,9 +36,9 @@ class Events(Base):
         self.root_block = SumBlock(
             self.name,
             [
-                BasicEvent(FaultType.SBE, self.fault_sbe, is_spfm=True),
-                BasicEvent(FaultType.DBE, self.fault_dbe, is_spfm=True),
-                BasicEvent(FaultType.MBE, self.fault_mbe, is_spfm=True),
-                BasicEvent(FaultType.WD, self.fault_wd, is_spfm=True),
+                BasicEvent("Events", FaultType.SBE, self.fault_sbe, is_spfm=True),
+                BasicEvent("Events", FaultType.DBE, self.fault_dbe, is_spfm=True),
+                BasicEvent("Events", FaultType.MBE, self.fault_mbe, is_spfm=True),
+                BasicEvent("Events", FaultType.WD, self.fault_wd, is_spfm=True),
             ],
         )
