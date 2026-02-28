@@ -14,7 +14,7 @@ class Sec(Base):
     a latent Single Bit (SB) fault source.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the SEC component.
 
         Args:
@@ -27,8 +27,7 @@ class Sec(Base):
         self.dbe_to_tbe_p = 0.17
 
         self.sb_source = 0.1
-
-        super().__init__(name)
+        super().__init__(name, total_fit)
 
     def configure_blocks(self):
         """Configures the root block.

@@ -15,7 +15,7 @@ class Base(BlockInterface, ABC):
     complex logic into a single modular unit.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the component and triggers the internal block configuration.
 
         Args:
@@ -23,6 +23,7 @@ class Base(BlockInterface, ABC):
         """
         self.name = name
         self.root_block: Optional[BlockInterface] = None
+        self.total_fit = total_fit
         self.configure_blocks()
 
     @abstractmethod

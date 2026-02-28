@@ -43,6 +43,12 @@ class PipelineBlock(BlockInterface):
         for block in self.sub_blocks:
             current_spfm, current_lfm = block.compute_fit(current_spfm, current_lfm)
 
+            # block_name = getattr(block, "name", block.__class__.__name__)
+            # print(f"Block abgeschlossen: {block_name}")
+            # print(f"  SPFM Dictionary: {current_spfm}")
+            # print(f"  LFM Dictionary:  {current_lfm}")
+            # print("-" * 20)
+
         return current_spfm, current_lfm
 
     def to_dict(self):

@@ -19,9 +19,7 @@ from ..interfaces import FaultType, SafetyObserver
 from .constants import (
     BASIC_EVENT_SHAPE,
     BLOCK_HEIGHT_DEZIMAL,
-    BLOCK_HEIGHT_PIXEL,
     BLOCK_WIDTH_DEZIMAL,
-    BLOCK_WIDTH_PIXEL,
     COLOR_BG,
     COLOR_COMP_BG,
     COLOR_COMP_BORDER,
@@ -31,10 +29,7 @@ from .constants import (
     COLOR_TEXT_SECONDARY,
     COMPASS_NORTH,
     COMPASS_SOUTH,
-    DATA_HEIGHT,
-    FONT_SIZE_DATA,
     FONT_SIZE_HEADER,
-    HEADER_HEIGHT,
     LABEL_PLUS,
     PATH_TYPE_LATENT,
     PATH_TYPE_RF,
@@ -54,7 +49,7 @@ from .constants import (
     SUM_NODE_SIZE,
     TRUE,
 )
-from .html_templates import get_coverage_label
+from .html_templates import get_coverage_label, get_split_label
 
 # --- Type Definitions for better readability ---
 PortMap: TypeAlias = dict[str, Optional[str]]
@@ -68,12 +63,15 @@ class SafetyVisualizer(SafetyObserver):
     and manages the auto-layouting of the signal flow.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, merge_latent: bool = False):
         """Initializes the visualizer with a Graphviz Digraph.
 
         Args:
             name (str): The name of the resulting diagram (and output filename).
         """
+        self.total_lfm_out_val = 0
+        self.merge_latent = merge_latent
+        self.current_latent_port: Optional[str] = None
         self.dot = Digraph(name=name)
         self.dot.attr(
             rankdir="BT",
@@ -91,6 +89,44 @@ class SafetyVisualizer(SafetyObserver):
         self.dot.attr("edge", arrowhead="none")
 
     # --- Helper Methods ---
+
+    def _accumulate_latent_paths(self, container: Digraph, ports: FlowMap, block_id: int) -> FlowMap:
+        """Führt alle latenten Pfade eines Blocks zu einem einzigen Bus-Port zusammen."""
+        if not self.merge_latent:
+            return ports
+
+        # 1. Sammle alle neuen latenten Ports aus der aktuellen FlowMap
+        new_latent_srcs = []
+        for fault_ports in ports.values():
+            port = fault_ports.get(PATH_TYPE_LATENT)
+            if port and port != self.current_latent_port:
+                new_latent_srcs.append(port)
+
+        if not new_latent_srcs:
+            return ports
+
+        # 2. Wenn bereits ein Bus existiert, füge ihn zu den Quellen hinzu
+        if self.current_latent_port:
+            new_latent_srcs.append(self.current_latent_port)
+
+        # 3. Erzeuge einen Junction-Knoten (+) für den Bus
+        # Wir nutzen eine feste Lane für den globalen latenten Pfad (z.B. ganz rechts)
+        bus_lane = self._get_lane_id("GLOBAL", PATH_TYPE_LATENT)
+
+        j_id = f"latent_bus_{block_id}"
+        container.node(j_id, label=LABEL_PLUS, shape=SUM_NODE_SHAPE, width=SUM_NODE_SIZE, height=SUM_NODE_SIZE, color=COLOR_LATENT, fontcolor=COLOR_LATENT, group=bus_lane)
+
+        for src in new_latent_srcs:
+            container.edge(src, f"{j_id}:{COMPASS_SOUTH}", color=COLOR_LATENT)
+
+        self.current_latent_port = f"{j_id}:{COMPASS_NORTH}"
+
+        updated_ports = ports.copy()
+        for ft in updated_ports:
+            updated_ports[ft] = updated_ports[ft].copy()
+            updated_ports[ft][PATH_TYPE_LATENT] = self.current_latent_port
+
+        return updated_ports
 
     def _get_node_id(self, prefix: str, block: Any) -> str:
         """Generates a consistent and unique identifier for a Graphviz node.
@@ -292,28 +328,44 @@ class SafetyVisualizer(SafetyObserver):
                             local_anchors.append(f"{in_id}:{COMPASS_NORTH}")
 
                         if paths.get(PATH_TYPE_LATENT):
-                            in_id_lat = f"in_{id(block)}_{fault.name}_lat"
-                            val = lfm_in.get(fault, 0.0)
-                            label_text = f"In {fault.name}\n{val:.2f}"
+                            if self.merge_latent:
+                                in_id_lat = f"in_{id(block)}_latent_lat"
+                                val = self.total_lfm_out_val
+                                label_text = f"In latent\n{val:.2f}"
+                                in_rank.node(
+                                    in_id_lat,
+                                    label=label_text,
+                                    shape="rect",
+                                    height="0.2",
+                                    style="filled",
+                                    fillcolor="white",
+                                    fontsize="7",
+                                    fixedsize="false",
+                                    group=self._get_lane_id(fault.name, PATH_TYPE_LATENT),
+                                )
+                            else:
+                                in_id_lat = f"in_{id(block)}_{fault.name}_lat"
+                                val = lfm_in.get(fault, 0.0)
+                                label_text = f"In {fault.name}\n{val:.2f}"
 
-                            in_rank.node(
-                                in_id_lat,
-                                label=label_text,
-                                shape="rect",
-                                height="0.2",
-                                style="filled",
-                                fillcolor="white",
-                                fontsize="7",
-                                fixedsize="false",
-                                group=self._get_lane_id(fault.name, PATH_TYPE_LATENT),
-                            )
-                            container.edge(
-                                paths[PATH_TYPE_LATENT],
-                                f"{in_id_lat}:{COMPASS_SOUTH}",
-                                color=COLOR_LATENT,
-                            )
-                            internal_inputs[fault][PATH_TYPE_LATENT] = f"{in_id_lat}:{COMPASS_NORTH}"
-                            local_anchors.append(f"{in_id_lat}:{COMPASS_NORTH}")
+                                in_rank.node(
+                                    in_id_lat,
+                                    label=label_text,
+                                    shape="rect",
+                                    height="0.2",
+                                    style="filled",
+                                    fillcolor="white",
+                                    fontsize="7",
+                                    fixedsize="false",
+                                    group=self._get_lane_id(fault.name, PATH_TYPE_LATENT),
+                                )
+                                container.edge(
+                                    paths[PATH_TYPE_LATENT],
+                                    f"{in_id_lat}:{COMPASS_SOUTH}",
+                                    color=COLOR_LATENT,
+                                )
+                                internal_inputs[fault][PATH_TYPE_LATENT] = f"{in_id_lat}:{COMPASS_NORTH}"
+                                local_anchors.append(f"{in_id_lat}:{COMPASS_NORTH}")
 
                 active_inputs = internal_inputs if internal_inputs else input_ports
                 active_predecessors = local_anchors if local_anchors else predecessors
@@ -330,6 +382,38 @@ class SafetyVisualizer(SafetyObserver):
                 )
 
                 final_outputs: FlowMap = {}
+
+                # Hilfsvariablen für das Merging
+                latent_junction_id = f"out_junction_{id(block)}_lat"
+                # latent_out_node = f"out_{id(block)}_global_latent"
+                has_latent_data = any(p.get(PATH_TYPE_LATENT) for p in internal_results.values())
+
+                if self.merge_latent and has_latent_data:
+                    # 1. Erstelle den Summenknoten (+)
+                    c.node(
+                        latent_junction_id,
+                        label=LABEL_PLUS,
+                        shape=SUM_NODE_SHAPE,
+                        width=SUM_NODE_SIZE,
+                        height=SUM_NODE_SIZE,
+                        fixedsize=TRUE,
+                        color=COLOR_LATENT,
+                        fontcolor=COLOR_LATENT,
+                        fontsize=SUM_FONT_SIZE,
+                    )
+
+                    # # 2. Erstelle den finalen "Out Latent" Block im out_rank
+                    self.total_lfm_out_val = sum(lfm_out.values()) if lfm_out else 0.0
+                    # with c.subgraph() as out_rank:
+                    #     out_rank.attr(rank="same")
+                    #     out_rank.node(
+                    #         latent_out_node, label=f"Out Latent\n{total_lfm_out_val:.2f}", shape="rect", style="filled", fillcolor="white", color=COLOR_LATENT, fontcolor=COLOR_LATENT, fontsize="7"
+                    #     )
+
+                    # Verbindung: Junction -> Out-Block
+                    # Update den Bus-Tracker für den nächsten Block außerhalb
+                    # self.current_latent_bus_port = f"{latent_out_node}:{COMPASS_NORTH}"
+
                 with c.subgraph() as out_rank:
                     out_rank.attr(rank="same")
 
@@ -363,27 +447,32 @@ class SafetyVisualizer(SafetyObserver):
                             final_outputs[fault][PATH_TYPE_RF] = f"{out_id}:{COMPASS_NORTH}"
 
                         if paths.get(PATH_TYPE_LATENT):
-                            out_id_lat = f"out_{id(block)}_{fault.name}_lat"
-                            val = lfm_out.get(fault, 0.0)
-                            label_text = f"Out {fault.name}\n{val:.2f}"
+                            if self.merge_latent:
+                                c.edge(paths[PATH_TYPE_LATENT], f"{latent_junction_id}:{COMPASS_SOUTH}", color=COLOR_LATENT)
+                                self.current_latent_port = f"{latent_junction_id}:{COMPASS_NORTH}"
+                                final_outputs[fault][PATH_TYPE_LATENT] = self.current_latent_port
+                            else:
+                                out_id_lat = f"out_{id(block)}_{fault.name}_lat"
+                                val = lfm_out.get(fault, 0.0)
+                                label_text = f"Out {fault.name}\n{val:.2f}"
 
-                            out_rank.node(
-                                out_id_lat,
-                                label=label_text,
-                                shape="rect",
-                                height="0.2",
-                                style="filled",
-                                fillcolor="white",
-                                fontsize="7",
-                                fixedsize="false",
-                                group=self._get_lane_id(fault.name, PATH_TYPE_LATENT),
-                            )
-                            c.edge(
-                                paths[PATH_TYPE_LATENT],
-                                f"{out_id_lat}:{COMPASS_SOUTH}",
-                                color=COLOR_LATENT,
-                            )
-                            final_outputs[fault][PATH_TYPE_LATENT] = f"{out_id_lat}:{COMPASS_NORTH}"
+                                out_rank.node(
+                                    out_id_lat,
+                                    label=label_text,
+                                    shape="rect",
+                                    height="0.2",
+                                    style="filled",
+                                    fillcolor="white",
+                                    fontsize="7",
+                                    fixedsize="false",
+                                    group=self._get_lane_id(fault.name, PATH_TYPE_LATENT),
+                                )
+                                c.edge(
+                                    paths[PATH_TYPE_LATENT],
+                                    f"{out_id_lat}:{COMPASS_SOUTH}",
+                                    color=COLOR_LATENT,
+                                )
+                                final_outputs[fault][PATH_TYPE_LATENT] = f"{out_id_lat}:{COMPASS_NORTH}"
 
                 return final_outputs
 
@@ -441,24 +530,7 @@ class SafetyVisualizer(SafetyObserver):
         """Draws a SplitBlock as a fixed-size HTML table."""
         node_id = self._get_node_id(PREFIX_NODE_SPLIT, block)
 
-        num_targets = len(block.distribution_rates)
-        width_total = int(BLOCK_WIDTH_PIXEL)
-        cell_width = width_total // num_targets
-
-        cells = [
-            f'<TD PORT="p_{tf.name}" WIDTH="{cell_width}" HEIGHT="{DATA_HEIGHT}" BGCOLOR="{COLOR_BG}"><FONT POINT-SIZE="{FONT_SIZE_DATA}">{p * 100:.1f}%</FONT></TD>'
-            for tf, p in block.distribution_rates.items()
-        ]
-
-        label = (
-            f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" WIDTH="{width_total}" '
-            f'HEIGHT="{BLOCK_HEIGHT_PIXEL}" FIXEDSIZE="TRUE">'
-            f"<TR>{''.join(cells)}</TR>"
-            f"<TR>"
-            f'<TD COLSPAN="{num_targets}" WIDTH="{width_total}" HEIGHT="{HEADER_HEIGHT}" '
-            f'BGCOLOR="{COLOR_HEADER}"><B> Split {block.fault_to_split.name}</B></TD>'
-            f"</TR></TABLE>>"
-        )
+        label = get_split_label(block)
 
         path_type = PATH_TYPE_RF if block.is_spfm else PATH_TYPE_LATENT
         group_id = self._get_lane_id(block.fault_to_split.name, path_type)

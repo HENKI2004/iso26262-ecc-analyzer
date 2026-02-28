@@ -14,7 +14,7 @@ class Sec(Base):
     diagnostic coverage and split operations are applied.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the SEC component with specific diagnostic coverage and failure rates.
 
         Args:
@@ -27,7 +27,7 @@ class Sec(Base):
         self.sb_source = 0.1
         self.dbe_source = 172.0
 
-        super().__init__(name)
+        super().__init__(name, total_fit)
 
     def configure_blocks(self):
         """Configures the internal block structure as a sequential pipeline.
@@ -39,8 +39,8 @@ class Sec(Base):
             self.name,
             [
                 BasicEvent("sec", FaultType.SB, self.sb_source, is_spfm=False),
-                BasicEvent("sec", FaultType.DBE, self.dbe_source, is_spfm=False),
-                CoverageBlock("sec", FaultType.SBE, self.sec_ecc_dc),
+                # BasicEvent("sec", FaultType.DBE, self.dbe_source, is_spfm=False),
+                CoverageBlock("sec", FaultType.SBE, self.sec_ecc_dc, 0),
                 SplitBlock(
                     "DBE_to_TBE_Split",
                     FaultType.DBE,

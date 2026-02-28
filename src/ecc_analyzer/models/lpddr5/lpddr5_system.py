@@ -4,12 +4,11 @@
 
 from ...core import PipelineBlock, SumBlock
 from ...system_base import SystemBase
-from .bus_trim import BusTrim
-from .dram_trim import DramTrim
-from .events import Events
 from .link_ecc import LinkEcc
 from .other_components import OtherComponents
-from .sec import Sec
+
+# from .sec_ded1 import SecDed1
+# from .sec_ded2 import SecDed2
 from .sec_ded import SecDed
 from .sec_ded_trim import SecDedTrim
 
@@ -26,14 +25,10 @@ class Lpddr5System(SystemBase):
         main_chain = PipelineBlock(
             "DRAM_Path",
             [
-                Events("DRAM_Sources"),
-                Sec("SEC"),
-                DramTrim("TRIM"),
-                BusTrim("BUS"),
-                LinkEcc("LINK-ECC"),
-                SecDed("SEC-DED"),
-                SecDedTrim("SEC-DED-TRIM"),
+                LinkEcc("LINK-ECC", self.total_fit),
+                SecDed("SEC-DED", self.total_fit),
+                SecDedTrim("SEC-DED-TRIM", self.total_fit),
             ],
         )
 
-        self.system_layout = SumBlock(self.name, [main_chain, OtherComponents("Other_HW")])
+        self.system_layout = SumBlock(self.name, [main_chain, OtherComponents("Other_HW", self.total_fit)])

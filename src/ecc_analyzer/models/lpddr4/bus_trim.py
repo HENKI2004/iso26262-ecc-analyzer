@@ -13,7 +13,7 @@ class BusTrim(Base):
     SBE, DBE, and TBE faults for both SPFM and LFM paths.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the BusTrim component with LPDDR4-specific split parameters.
 
         Args:
@@ -29,11 +29,11 @@ class BusTrim(Base):
 
         self.lfm_sbe_split = {FaultType.SBE: 0.438}
         self.lfm_dbe_split = {FaultType.SBE: 0.496, FaultType.DBE: 0.314}
+        dram_fit = 2300.0
+        self.spfm_mbe_source = 0.001 * dram_fit
+        self.spfm_az_source = 0.0748 * dram_fit
 
-        self.spfm_mbe_source = 2.3
-        self.spfm_az_source = 172.0
-
-        super().__init__(name)
+        super().__init__(name, total_fit)
 
     def configure_blocks(self):
         """Configures the root block as a collection of fault injections and split operations.

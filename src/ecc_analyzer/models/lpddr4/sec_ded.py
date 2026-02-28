@@ -2,7 +2,7 @@
 
 # Copyright (c) 2025 Linus Held. All rights reserved.
 
-from ...core import Base, BasicEvent, CoverageBlock, SplitBlock, SumBlock
+from ...core import Base, BasicEvent, CoverageBlock, PipelineBlock, SplitBlock, SumBlock
 from ...interfaces import FaultType
 
 
@@ -13,7 +13,7 @@ class SecDed(Base):
     transformations between failure modes (e.g., TBE -> MBE).
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the SEC-DED component with specific diagnostic coverage and source parameters.
 
         Args:
@@ -22,7 +22,7 @@ class SecDed(Base):
         self.sbe_dc = 1.0
         self.dbe_dc = 1.0
         self.mbe_dc = 0.5
-        self.tbe_dc = 1.0
+        self.tbe_dc = 1
 
         self.tbe_split_to_mbe = 0.56
 
@@ -31,7 +31,7 @@ class SecDed(Base):
 
         self.sdb_source = 0.1
 
-        super().__init__(name)
+        super().__init__(name, total_fit)
 
     def configure_blocks(self):
         """Configures the internal block structure as a sum block."""
@@ -39,23 +39,24 @@ class SecDed(Base):
             self.name,
             [
                 BasicEvent("sec_dec", FaultType.SDB, self.sdb_source, is_spfm=False),
-                CoverageBlock("sec_dec", FaultType.SBE, self.lfm_sbe_dc, is_spfm=False),
-                CoverageBlock("sec_dec", FaultType.DBE, self.lfm_dbe_dc, is_spfm=False),
-                SumBlock(
+                CoverageBlock("sec_dec", FaultType.SBE, 1 - self.lfm_sbe_dc, self.lfm_sbe_dc, is_spfm=False),
+                CoverageBlock("sec_dec", FaultType.DBE, 1 - self.lfm_dbe_dc, self.lfm_dbe_dc, is_spfm=False),
+                PipelineBlock(
                     "test",
                     [
                         SplitBlock(
                             "sec_ded_tbe_split_to_mbe",
                             FaultType.TBE,
                             {
-                                FaultType.TBE: self.tbe_split_to_mbe,
+                                FaultType.TBE: 1 - self.tbe_split_to_mbe,
+                                FaultType.MBE: self.tbe_split_to_mbe,
                             },
                         ),
-                        CoverageBlock("sec_dec", FaultType.TBE, self.tbe_dc),
+                        CoverageBlock("sec_dec", FaultType.TBE, self.tbe_dc, 0.0),
                     ],
                 ),
-                CoverageBlock("sec_dec", FaultType.SBE, self.sbe_dc),
-                CoverageBlock("sec_dec", FaultType.DBE, self.dbe_dc),
-                CoverageBlock("sec_dec", FaultType.MBE, self.mbe_dc),
+                CoverageBlock("sec_dec", FaultType.SBE, self.sbe_dc, 0.0),
+                CoverageBlock("sec_dec", FaultType.DBE, self.dbe_dc, 0.0),
+                CoverageBlock("sec_dec", FaultType.MBE, self.mbe_dc, self.mbe_dc),
             ],
         )

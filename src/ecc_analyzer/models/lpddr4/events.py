@@ -13,7 +13,7 @@ class Events(Base):
     As a pure source component, it uses a SumBlock to inject all rates in parallel.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the fault rates based on a baseline DRAM FIT value.
 
         Args:
@@ -26,7 +26,7 @@ class Events(Base):
         self.fault_mbe = 0.0748 * dram_fit
         self.fault_wd = 0.0748 * dram_fit
 
-        super().__init__(name)
+        super().__init__(name, total_fit)
 
     def configure_blocks(self):
         """Configures the internal block structure by injecting failure rates as basic events.

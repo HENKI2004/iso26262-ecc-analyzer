@@ -93,9 +93,4 @@ class AsilBlock:
 
         achieved_asil = self._determine_asil(spfm, lfm, lambda_rf_sum)
 
-        return {
-            "SPFM": spfm,
-            "LFM": lfm,
-            "Lambda_RF_Sum": lambda_rf_sum,
-            "ASIL_Achieved": achieved_asil,
-        }
+        return {"SPFM": spfm, "LFM": lfm, "Lambda_RF_Sum": lambda_rf_sum, "Lambda_Latent": lambda_latent_sum, "ASIL_Achieved": achieved_asil, "total_fit": lambda_total}

@@ -2,7 +2,7 @@
 
 # Copyright (c) 2025 Linus Held. All rights reserved.
 
-from ...core import Base, BasicEvent, SumBlock
+from ...core import Base, BasicEvent, CoverageBlock, PipelineBlock, SplitBlock
 from ...interfaces import FaultType
 
 
@@ -13,25 +13,23 @@ class OtherComponents(Base):
     single source injection block to simplify the top-level model.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the component and sets the constant source FIT rate.
 
         Args:
             name (str): The descriptive name of the component.
         """
-        self.other_rf_source = 9.5
-
-        super().__init__(name)
+        self.total_other_fit = total_fit * 0.4523809524
+        super().__init__(name, total_fit)
 
     def configure_blocks(self):
-        """Configures the root block to inject the FIT rate.
-
-        Uses a SumBlock as the base container for the fault source (BasicEvent).
-        The fault is injected into the residual path (is_spfm=True).
-        """
-        self.root_block = SumBlock(
+        # Wir bauen die Kette exakt nach dem SystemC Vorbild nach
+        self.root_block = PipelineBlock(
             self.name,
             [
-                BasicEvent("OTH", FaultType.OTH, self.other_rf_source, is_spfm=True),
+                BasicEvent("ALL_OTHER", FaultType.OTH, self.total_other_fit, is_spfm=True),
+                SplitBlock("OTHER_SPLIT", FaultType.OTH, {FaultType.OTH: 0.5}, is_spfm=True),
+                CoverageBlock("OTHER_COV", FaultType.OTH, 0.99, 0.01, is_spfm=True),
+                CoverageBlock("OTHER_COV_LAT", FaultType.OTH, 1.0, 1.0, is_spfm=False),
             ],
         )

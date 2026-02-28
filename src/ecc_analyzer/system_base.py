@@ -55,6 +55,19 @@ class SystemBase(ABC):
         if not self.system_layout:
             raise ValueError("System layout is not configured.")
 
+        def get_actual_total_fit(block):
+            total = 0.0
+            if hasattr(block, "lambda_BE"):
+                total += block.lambda_BE
+            if hasattr(block, "sub_blocks"):
+                for sub in block.sub_blocks:
+                    total += get_actual_total_fit(sub)
+            if hasattr(block, "root_block") and block.root_block:
+                total += get_actual_total_fit(block.root_block)
+            return total
+
+        self.total_fit = get_actual_total_fit(self.system_layout)
+
         final_spfm, final_lfm = self.system_layout.compute_fit({}, {})
 
         return self.asil_block.compute_metrics(self.total_fit, final_spfm, final_lfm)

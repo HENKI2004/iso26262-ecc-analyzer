@@ -13,7 +13,7 @@ class DramTrim(Base):
     fault rates according to specific hardware trimming factors defined for LPDDR5.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the DramTrim component with hardware-specific split distribution parameters.
 
         Args:
@@ -30,8 +30,7 @@ class DramTrim(Base):
         self.lfm_sbe_split = self.spfm_sbe_split
         self.lfm_dbe_split = self.spfm_dbe_split
         self.lfm_tbe_split = self.spfm_tbe_split
-
-        super().__init__(name)
+        super().__init__(name, total_fit)
 
     def configure_blocks(self):
         """Configures the root block as a collection of split operations.

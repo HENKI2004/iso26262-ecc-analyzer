@@ -2,8 +2,6 @@
 
 # Copyright (c) 2025 Linus Held. All rights reserved.
 
-from typing import Optional
-
 import sympy
 
 from ..interfaces import BlockInterface, FaultType
@@ -21,7 +19,7 @@ class CoverageBlock(BlockInterface):
         name: str,
         target_fault: FaultType,
         dc_rate_c_or_cR: float,
-        dc_rate_latent_cL: Optional[float] = None,
+        dc_rate_latent_cL: float,
         is_spfm: bool = True,
     ):
         """Initializes the CoverageBlock with specific diagnostic coverage parameters.
@@ -38,12 +36,8 @@ class CoverageBlock(BlockInterface):
         self.name = name
         self.target_fault = target_fault
         self.is_spfm = is_spfm
-        if dc_rate_latent_cL is not None:
-            self.c_R = dc_rate_c_or_cR
-            self.c_L = dc_rate_latent_cL
-        else:
-            self.c_R = dc_rate_c_or_cR
-            self.c_L = 1.0 - dc_rate_c_or_cR
+        self.c_R = dc_rate_c_or_cR
+        self.c_L = dc_rate_latent_cL
 
     def compute_fit(self, spfm_rates: dict[FaultType, float], lfm_rates: dict[FaultType, float]) -> tuple[dict[FaultType, float], dict[FaultType, float]]:
         """Transforms the input fault rate dictionaries by applying diagnostic coverage logic.
@@ -72,7 +66,7 @@ class CoverageBlock(BlockInterface):
         else:
             if self.target_fault in new_lfm:
                 lambda_in = new_lfm.pop(self.target_fault)
-                lambda_rem = lambda_in * (1.0 - self.c_R)
+                lambda_rem = lambda_in * (1.0 - self.c_L)
                 if lambda_rem > 0:
                     new_lfm[self.target_fault] = lambda_rem
 
@@ -109,6 +103,6 @@ class CoverageBlock(BlockInterface):
         else:
             if self.target_fault in new_lfm:
                 lambda_in = new_lfm.pop(self.target_fault)
-                new_lfm[self.target_fault] = lambda_in * (1.0 - c_r_val)
+                new_lfm[self.target_fault] = lambda_in * (1.0 - c_l_val)
 
         return new_spfm, new_lfm

@@ -21,3 +21,4 @@ class FaultType(Enum):
     SDB = auto()
     OTH = auto()
     SBE_IF = auto()
+    LB = auto()

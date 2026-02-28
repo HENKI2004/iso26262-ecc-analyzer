@@ -24,13 +24,13 @@ class Lpddr4System(SystemBase):
         main_chain = PipelineBlock(
             "DRAM_Path",
             [
-                Events("Source"),
-                Sec("SEC"),
-                DramTrim("TRIM"),
-                BusTrim("BUS"),
-                SecDed("SEC-DED"),
-                SecDedTrim("SEC-DED-TRIM"),
+                Events("Source", self.total_fit),
+                Sec("SEC", self.total_fit),
+                DramTrim("TRIM", self.total_fit),
+                BusTrim("BUS", self.total_fit),
+                SecDed("SEC-DED", self.total_fit),
+                SecDedTrim("SEC-DED-TRIM", self.total_fit),
             ],
         )
 
-        self.system_layout = SumBlock(self.name, [main_chain, OtherComponents("Other_HW")])
+        self.system_layout = SumBlock(self.name, [main_chain, OtherComponents("Other_HW", self.total_fit)])

@@ -13,7 +13,7 @@ class SecDedTrim(Base):
     model the final trimming behavior of the LPDDR5 architecture.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, total_fit: float):
         """Initializes the SecDedTrim component with predefined split parameters.
 
         Args:
@@ -30,8 +30,7 @@ class SecDedTrim(Base):
         self.lfm_sbe_split = self.spfm_sbe_split
         self.lfm_dbe_split = self.spfm_dbe_split
         self.lfm_tbe_split = self.spfm_tbe_split
-
-        super().__init__(name)
+        super().__init__(name, total_fit)
 
     def configure_blocks(self):
         """Configures the root block as a collection of split operations.
