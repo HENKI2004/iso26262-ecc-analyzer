@@ -5,8 +5,9 @@
 # from matplotlib import pyplot as plt
 
 # from ecc_analyzer.models.lpddr4 import Lpddr4System
-# from ecc_analyzer.models.lpddr5 import Lpddr5System
-from ecc_analyzer.models.miniSys.mini_sys import MinimalSystem
+from ecc_analyzer.models.lpddr5 import Lpddr5System
+
+# from ecc_analyzer.models.miniSys.mini_sys import MinimalSystem
 
 
 def run_analysis_for_system(system, pipeline_name_for_detail="DRAM_Path"):
@@ -29,7 +30,7 @@ def run_analysis_for_system(system, pipeline_name_for_detail="DRAM_Path"):
 
     pdf_name = f"{system.name}_Report"
     print(f"Generiere PDF: {pdf_name}.pdf ...")
-    system.generate_pdf(pdf_name)
+    system.generate_pdf(pdf_name, False)
     print("Fertig.\n")
 
 
@@ -64,17 +65,17 @@ def run_dram_sensitivity_analysis(system_class, start_fit=0.01, end_fit=2500, st
 
 
 def main():
-    test = MinimalSystem("MinimalSystem", 45, other_fit=5)
-    run_analysis_for_system(test)
-    test.save_to_json("minimal_system_config.json")
-    metrics = test.get_symbolic_metrics(mode="all_vars")
-    print(metrics)
+    # test = MinimalSystem("MinimalSystem", 45, other_fit=5)
+    # run_analysis_for_system(test)
+    # test.save_to_json("minimal_system_config.json")
+    # metrics = test.get_symbolic_metrics(mode="all_vars")
+    # print(metrics)
 
     # lpddr4 = Lpddr4System("LPDDR4_System", total_fit=4220.0)
     # # run_analysis_for_system(lpddr4)
 
-    # lpddr5 = Lpddr5System("LPDDR5_System", total_fit=2300.0, other_fit=1900.0)
-    # run_analysis_for_system(lpddr5)
+    lpddr5 = Lpddr5System("LPDDR5_System", total_fit=2300.0, other_fit=1900.0)
+    run_analysis_for_system(lpddr5)
 
     # metrics = lpddr5.get_symbolic_metrics(mode="numeric")
     # print(metrics)

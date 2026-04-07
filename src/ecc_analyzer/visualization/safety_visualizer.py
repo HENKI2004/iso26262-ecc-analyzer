@@ -75,10 +75,11 @@ class SafetyVisualizer(SafetyObserver):
         self.dot = Digraph(name=name)
         self.dot.attr(
             rankdir="BT",
-            nodesep="1.0",
-            ranksep="0.8",
+            nodesep="1.5",
+            ranksep="1.2",
             splines="spline",  # line, spline, polyline, ortho, curved,  try this compound ??
             newrank=TRUE,
+            # concentrate="true",
         )
         self.dot.attr(
             "node",
@@ -216,7 +217,13 @@ class SafetyVisualizer(SafetyObserver):
             )
 
             for src in all_srcs:
-                container.edge(src, f"{j_id}:{COMPASS_SOUTH}", color=color, minlen="2")
+                container.edge(
+                    src,
+                    f"{j_id}:{COMPASS_SOUTH}",
+                    color=color,
+                    minlen="2",
+                    weight="10",  # <-- HIER HINZUFÜGEN
+                )
 
             return f"{j_id}:{COMPASS_NORTH}"
 
@@ -260,7 +267,9 @@ class SafetyVisualizer(SafetyObserver):
             container = self.dot
 
         if isinstance(block, BasicEvent):
-            return self._draw_basic_event(block, spfm_out, lfm_out, container, predecessors)
+            out_ports = input_ports.copy()
+            out_ports.update(self._draw_basic_event(block, spfm_out, lfm_out, container, predecessors))
+            return out_ports
         elif isinstance(block, SplitBlock):
             return self._draw_split_block(block, input_ports, spfm_out, lfm_out, container)
         elif isinstance(block, CoverageBlock):
@@ -319,30 +328,13 @@ class SafetyVisualizer(SafetyObserver):
                                 fixedsize="false",
                                 group=self._get_lane_id(fault.name, PATH_TYPE_RF),
                             )
-                            container.edge(
-                                paths[PATH_TYPE_RF],
-                                f"{in_id}:{COMPASS_SOUTH}",
-                                color=COLOR_RF,
-                            )
+                            container.edge(paths[PATH_TYPE_RF], f"{in_id}:{COMPASS_SOUTH}", color=COLOR_RF, weight="10")
                             internal_inputs[fault][PATH_TYPE_RF] = f"{in_id}:{COMPASS_NORTH}"
                             local_anchors.append(f"{in_id}:{COMPASS_NORTH}")
 
                         if paths.get(PATH_TYPE_LATENT):
                             if self.merge_latent:
-                                in_id_lat = f"in_{id(block)}_latent_lat"
-                                val = self.total_lfm_out_val
-                                label_text = f"In latent\n{val:.2f}"
-                                in_rank.node(
-                                    in_id_lat,
-                                    label=label_text,
-                                    shape="rect",
-                                    height="0.2",
-                                    style="filled",
-                                    fillcolor="white",
-                                    fontsize="7",
-                                    fixedsize="false",
-                                    group=self._get_lane_id(fault.name, PATH_TYPE_LATENT),
-                                )
+                                pass
                             else:
                                 in_id_lat = f"in_{id(block)}_{fault.name}_lat"
                                 val = lfm_in.get(fault, 0.0)
@@ -359,11 +351,7 @@ class SafetyVisualizer(SafetyObserver):
                                     fixedsize="false",
                                     group=self._get_lane_id(fault.name, PATH_TYPE_LATENT),
                                 )
-                                container.edge(
-                                    paths[PATH_TYPE_LATENT],
-                                    f"{in_id_lat}:{COMPASS_SOUTH}",
-                                    color=COLOR_LATENT,
-                                )
+                                container.edge(paths[PATH_TYPE_LATENT], f"{in_id_lat}:{COMPASS_SOUTH}", color=COLOR_LATENT, weight="10")
                                 internal_inputs[fault][PATH_TYPE_LATENT] = f"{in_id_lat}:{COMPASS_NORTH}"
                                 local_anchors.append(f"{in_id_lat}:{COMPASS_NORTH}")
 
@@ -381,48 +369,54 @@ class SafetyVisualizer(SafetyObserver):
                     predecessors=active_predecessors,
                 )
 
+                # Vor der Schleife: Prüfen, ob WIRKLICH NEUE Latent-Pfade erzeugt wurden
+                # (Ignoriere Pfade, die einfach nur der durchgeschleifte alte Bus sind)
+                new_latent_paths = [paths[PATH_TYPE_LATENT] for paths in internal_results.values() if paths.get(PATH_TYPE_LATENT) and paths[PATH_TYPE_LATENT] != self.current_latent_port]
+                has_new_latent = len(new_latent_paths) > 0
+
                 final_outputs: FlowMap = {}
-
-                # Hilfsvariablen für das Merging
-                latent_junction_id = f"out_junction_{id(block)}_lat"
-                # latent_out_node = f"out_{id(block)}_global_latent"
-                has_latent_data = any(p.get(PATH_TYPE_LATENT) for p in internal_results.values())
-
-                if self.merge_latent and has_latent_data:
-                    # 1. Erstelle den Summenknoten (+)
-                    c.node(
-                        latent_junction_id,
-                        label=LABEL_PLUS,
-                        shape=SUM_NODE_SHAPE,
-                        width=SUM_NODE_SIZE,
-                        height=SUM_NODE_SIZE,
-                        fixedsize=TRUE,
-                        color=COLOR_LATENT,
-                        fontcolor=COLOR_LATENT,
-                        fontsize=SUM_FONT_SIZE,
-                    )
-
-                    # # 2. Erstelle den finalen "Out Latent" Block im out_rank
-                    self.total_lfm_out_val = sum(lfm_out.values()) if lfm_out else 0.0
-                    # with c.subgraph() as out_rank:
-                    #     out_rank.attr(rank="same")
-                    #     out_rank.node(
-                    #         latent_out_node, label=f"Out Latent\n{total_lfm_out_val:.2f}", shape="rect", style="filled", fillcolor="white", color=COLOR_LATENT, fontcolor=COLOR_LATENT, fontsize="7"
-                    #     )
-
-                    # Verbindung: Junction -> Out-Block
-                    # Update den Bus-Tracker für den nächsten Block außerhalb
-                    # self.current_latent_bus_port = f"{latent_out_node}:{COMPASS_NORTH}"
 
                 with c.subgraph() as out_rank:
                     out_rank.attr(rank="same")
 
+                    # 1. Den blauen Plus-Knoten auf der rechten Seite erstellen
+                    # (ABER NUR, wenn dieser Block auch wirklich neue Latent-Fehler erzeugt)
+                    if self.merge_latent and has_new_latent:
+                        latent_junction_id = f"out_junction_{id(block)}_lat"
+                        out_rank.node(
+                            latent_junction_id,
+                            label=LABEL_PLUS,
+                            shape=SUM_NODE_SHAPE,
+                            width=SUM_NODE_SIZE,
+                            height=SUM_NODE_SIZE,
+                            fixedsize="true",
+                            color=COLOR_LATENT,
+                            fontcolor=COLOR_LATENT,
+                            fontsize=SUM_FONT_SIZE,
+                            group=self._get_lane_id("GLOBAL", PATH_TYPE_LATENT),
+                        )
+                        # Der blaue Bus kommt von UNTEN (SOUTH) und geht nach OBEN (NORTH)
+                        if self.current_latent_port:
+                            c.edge(self.current_latent_port, f"{latent_junction_id}:{COMPASS_SOUTH}", color=COLOR_LATENT, weight="100")
+
+                        # Alten Port merken, um Duplikate auszufiltern
+                        old_latent_port = self.current_latent_port
+                        self.current_latent_port = f"{latent_junction_id}:{COMPASS_NORTH}"
+                    else:
+                        old_latent_port = self.current_latent_port
+                        latent_junction_id = None
+
+                    # Set, um mehrfache Linien vom selben internen SumBlock zu verhindern
+                    connected_latent_ports = set()
+
+                    # 2. Die normalen Ausgänge generieren
                     for fault, paths in internal_results.items():
                         final_outputs[fault] = {
                             PATH_TYPE_RF: None,
                             PATH_TYPE_LATENT: None,
                         }
 
+                        # -- Residual Fault (RF) Logik (unverändert) --
                         if paths.get(PATH_TYPE_RF):
                             out_id = f"out_{id(block)}_{fault.name}_rf"
                             val = spfm_out.get(fault, 0.0)
@@ -439,18 +433,18 @@ class SafetyVisualizer(SafetyObserver):
                                 fixedsize="false",
                                 group=self._get_lane_id(fault.name, PATH_TYPE_RF),
                             )
-                            c.edge(
-                                paths[PATH_TYPE_RF],
-                                f"{out_id}:{COMPASS_SOUTH}",
-                                color=COLOR_RF,
-                            )
+                            c.edge(paths[PATH_TYPE_RF], f"{out_id}:{COMPASS_SOUTH}", color=COLOR_RF, weight="10")
                             final_outputs[fault][PATH_TYPE_RF] = f"{out_id}:{COMPASS_NORTH}"
 
+                        # -- Latent Fault Logik --
                         if paths.get(PATH_TYPE_LATENT):
                             if self.merge_latent:
-                                c.edge(paths[PATH_TYPE_LATENT], f"{latent_junction_id}:{COMPASS_SOUTH}", color=COLOR_LATENT)
-                                self.current_latent_port = f"{latent_junction_id}:{COMPASS_NORTH}"
-                                final_outputs[fault][PATH_TYPE_LATENT] = self.current_latent_port
+                                port_to_connect = paths[PATH_TYPE_LATENT]
+                                # Verbinde NUR, wenn es eine NEUE Quelle ist und wir diesen Port nicht schon verbunden haben
+                                if port_to_connect != old_latent_port and latent_junction_id:
+                                    if port_to_connect not in connected_latent_ports:
+                                        c.edge(port_to_connect, latent_junction_id, color=COLOR_LATENT)
+                                        connected_latent_ports.add(port_to_connect)
                             else:
                                 out_id_lat = f"out_{id(block)}_{fault.name}_lat"
                                 val = lfm_out.get(fault, 0.0)
@@ -467,12 +461,15 @@ class SafetyVisualizer(SafetyObserver):
                                     fixedsize="false",
                                     group=self._get_lane_id(fault.name, PATH_TYPE_LATENT),
                                 )
-                                c.edge(
-                                    paths[PATH_TYPE_LATENT],
-                                    f"{out_id_lat}:{COMPASS_SOUTH}",
-                                    color=COLOR_LATENT,
-                                )
+                                c.edge(paths[PATH_TYPE_LATENT], f"{out_id_lat}:{COMPASS_SOUTH}", color=COLOR_LATENT, weight="10")
                                 final_outputs[fault][PATH_TYPE_LATENT] = f"{out_id_lat}:{COMPASS_NORTH}"
+
+                # 3. Jeden Fehler-Typ auf den aktuellen Bus referenzieren
+                if self.merge_latent:
+                    for fault in input_ports.keys() | internal_results.keys():
+                        if fault not in final_outputs:
+                            final_outputs[fault] = {PATH_TYPE_RF: None, PATH_TYPE_LATENT: None}
+                        final_outputs[fault][PATH_TYPE_LATENT] = self.current_latent_port
 
                 return final_outputs
 
@@ -508,7 +505,12 @@ class SafetyVisualizer(SafetyObserver):
         )
 
         if predecessors:
-            container.edge(predecessors[0], f"{node_id}:{COMPASS_SOUTH}", style="invis")
+            container.edge(
+                predecessors[0],
+                f"{node_id}:{COMPASS_SOUTH}",
+                style="invis",
+                weight="10",  # <-- HIER HINZUFÜGEN
+            )
 
         port_n = f"{node_id}:{COMPASS_NORTH}"
 
@@ -547,6 +549,7 @@ class SafetyVisualizer(SafetyObserver):
                 f"{node_id}:{COMPASS_SOUTH}",
                 color=edge_color,
                 minlen="2",
+                weight="10",  # <-- HIER HINZUFÜGEN
             )
 
         new_ports = input_ports.copy()
@@ -596,6 +599,7 @@ class SafetyVisualizer(SafetyObserver):
                 f"{node_id}:{COMPASS_SOUTH}",
                 color=edge_color,
                 minlen="2",
+                weight="10",  # <-- HIER HINZUFÜGEN
             )
 
         new_ports = input_ports.copy()
@@ -603,9 +607,34 @@ class SafetyVisualizer(SafetyObserver):
         port_lat = f"{node_id}:latent:{COMPASS_NORTH}"
 
         if block.is_spfm:
+            prev_lat = prev_ports.get(PATH_TYPE_LATENT)
+            if prev_lat:
+                # Verbindet den alten Latent-Pfad mit dem neu generierten vom CoverageBlock
+                j_id = f"{PREFIX_NODE_SUM}{block.target_fault.name}_lat_{id(block)}"
+                group_lat = self._get_lane_id(block.target_fault.name, PATH_TYPE_LATENT)
+
+                container.node(
+                    j_id,
+                    label=LABEL_PLUS,
+                    shape=SUM_NODE_SHAPE,
+                    width=SUM_NODE_SIZE,
+                    height=SUM_NODE_SIZE,
+                    fixedsize=TRUE,
+                    color=COLOR_LATENT,
+                    fontcolor=COLOR_LATENT,
+                    fontsize=SUM_FONT_SIZE,
+                    group=group_lat,
+                )
+
+                container.edge(prev_lat, f"{j_id}:{COMPASS_SOUTH}", color=COLOR_LATENT, weight="10")
+                container.edge(port_lat, f"{j_id}:{COMPASS_SOUTH}", color=COLOR_LATENT, weight="10")
+                merged_lat = f"{j_id}:{COMPASS_NORTH}"
+            else:
+                merged_lat = port_lat
+
             new_ports[block.target_fault] = {
                 PATH_TYPE_RF: port_rf,
-                PATH_TYPE_LATENT: port_lat,
+                PATH_TYPE_LATENT: merged_lat,
             }
         else:
             new_ports[block.target_fault] = {
@@ -757,6 +786,10 @@ class SafetyVisualizer(SafetyObserver):
         processed_rf = set()
         processed_lat = set()
 
+        # SICHERE DEN EINGANGS-BUS FÜR ALLE PARALLELEN BLÖCKE
+        incoming_latent_port = self.current_latent_port
+        outgoing_latent_ports = []
+
         cluster_name = f"{PREFIX_CLUSTER_SUM}{id(block)}"
         with container.subgraph(name=cluster_name) as c:
             c.attr(
@@ -768,6 +801,10 @@ class SafetyVisualizer(SafetyObserver):
 
             with c.subgraph() as logic_rank:
                 for sub_block in block.sub_blocks:
+                    # VOR JEDEM PARALLELEN BLOCK: SETZE DEN BUS ZURÜCK AUF DEN EINGANG!
+                    if self.merge_latent:
+                        self.current_latent_port = incoming_latent_port
+
                     child_spfm, child_lfm = sub_block.compute_fit(spfm_in, lfm_in)
 
                     child_res = self.on_block_computed(
@@ -781,13 +818,14 @@ class SafetyVisualizer(SafetyObserver):
                         predecessors=predecessors,
                     )
 
+                    # NACH JEDEM PARALLELEN BLOCK: MERKE DIR DEN AUSGANGS-BUS DIESES PFADS
+                    if self.merge_latent:
+                        if self.current_latent_port and self.current_latent_port not in outgoing_latent_ports:
+                            outgoing_latent_ports.append(self.current_latent_port)
+
                     is_processing_block = isinstance(
                         sub_block,
-                        (
-                            CoverageBlock,
-                            SplitBlock,
-                            PipelineBlock,
-                        ),
+                        (CoverageBlock, SplitBlock, PipelineBlock),
                     )
 
                     for fault, ports in child_res.items():
@@ -819,37 +857,67 @@ class SafetyVisualizer(SafetyObserver):
                     PATH_TYPE_LATENT: None,
                 }
 
+                # --- RF Logik (unverändert) ---
                 sources_rf = rf_collect.get(fault, [])
                 orig_rf = input_ports.get(fault, {}).get(PATH_TYPE_RF)
                 if fault not in processed_rf and orig_rf:
                     if orig_rf not in sources_rf:
                         sources_rf.append(orig_rf)
 
-                final_ports[fault][PATH_TYPE_RF] = self._draw_junction(
-                    c,
-                    fault,
-                    sources_rf,
-                    None,
-                    COLOR_RF,
-                    PATH_TYPE_RF,
-                    id(block),
-                )
+                final_ports[fault][PATH_TYPE_RF] = self._draw_junction(c, fault, sources_rf, None, COLOR_RF, PATH_TYPE_RF, id(block))
 
+                # --- LATENT Logik (Trennung von lokalen und globalen Ports) ---
                 sources_lat = lat_collect.get(fault, [])
                 orig_lat = input_ports.get(fault, {}).get(PATH_TYPE_LATENT)
                 if fault not in processed_lat and orig_lat:
                     if orig_lat not in sources_lat:
                         sources_lat.append(orig_lat)
 
-                final_ports[fault][PATH_TYPE_LATENT] = self._draw_junction(
-                    c,
-                    fault,
-                    sources_lat,
-                    None,
-                    COLOR_LATENT,
-                    PATH_TYPE_LATENT,
-                    id(block),
-                )
+                if self.merge_latent:
+                    # Filtere den globalen Bus heraus, verbinde nur Coverage und Basic Events
+                    local_sources_lat = [p for p in sources_lat if p and "out_junction_" not in p and "sum_bus_" not in p and "latent_bus_" not in p]
+
+                    if local_sources_lat:
+                        final_ports[fault][PATH_TYPE_LATENT] = self._draw_junction(c, fault, local_sources_lat, None, COLOR_LATENT, PATH_TYPE_LATENT, id(block))
+                    else:
+                        final_ports[fault][PATH_TYPE_LATENT] = None
+                else:
+                    final_ports[fault][PATH_TYPE_LATENT] = self._draw_junction(c, fault, sources_lat, None, COLOR_LATENT, PATH_TYPE_LATENT, id(block))
+
+            # --- ZUSAMMENFÜHRUNG DER PARALLELEN BUSSE ---
+            if self.merge_latent:
+                valid_out_ports = [p for p in outgoing_latent_ports if p != incoming_latent_port]
+
+                if len(valid_out_ports) > 1:
+                    bus_junction_id = f"sum_bus_{id(block)}_lat"
+                    c.node(
+                        bus_junction_id,
+                        label=LABEL_PLUS,
+                        shape=SUM_NODE_SHAPE,
+                        width=SUM_NODE_SIZE,
+                        height=SUM_NODE_SIZE,
+                        fixedsize="true",
+                        color=COLOR_LATENT,
+                        fontcolor=COLOR_LATENT,
+                        fontsize=SUM_FONT_SIZE,
+                        group=self._get_lane_id("GLOBAL", PATH_TYPE_LATENT),
+                    )
+
+                    if incoming_latent_port:
+                        c.edge(incoming_latent_port, f"{bus_junction_id}:{COMPASS_SOUTH}", color=COLOR_LATENT, weight="100")
+                    for port in valid_out_ports:
+                        c.edge(port, f"{bus_junction_id}:{COMPASS_SOUTH}", color=COLOR_LATENT)
+
+                    self.current_latent_port = f"{bus_junction_id}:{COMPASS_NORTH}"
+                elif len(valid_out_ports) == 1:
+                    self.current_latent_port = valid_out_ports[0]
+                else:
+                    self.current_latent_port = incoming_latent_port
+
+                # Allen fehlenden Ports den aktuellen Bus zuweisen (verhindert das Verschlucken der globalen Ports)
+                for fault in final_ports:
+                    if not final_ports[fault][PATH_TYPE_LATENT]:
+                        final_ports[fault][PATH_TYPE_LATENT] = self.current_latent_port
 
         return final_ports
 

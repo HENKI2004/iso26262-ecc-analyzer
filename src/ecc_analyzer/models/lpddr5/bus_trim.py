@@ -31,6 +31,9 @@ class BusTrim(Base):
         self.spfm_az_source = 0.0748 * dram_fit
         self.spfm_lb_source = 0.1
 
+        self.spfm_bus_mbe = 2.0
+        self.spfm_bus_wd = 1.5
+
         self.lfm_sbe_split = self.spfm_sbe_split
         self.lfm_dbe_split = self.spfm_dbe_split
         self.lfm_tbe_split = self.spfm_tbe_split
@@ -47,6 +50,8 @@ class BusTrim(Base):
             [
                 BasicEvent("Bus", FaultType.AZ, self.spfm_az_source, is_spfm=True),
                 BasicEvent("Bus", FaultType.LB, self.spfm_lb_source, is_spfm=True),
+                BasicEvent("Bus_MBE", FaultType.MBE, self.spfm_bus_mbe, is_spfm=True),
+                BasicEvent("Bus_OBE", FaultType.WD, self.spfm_bus_wd, is_spfm=True),
                 SplitBlock("BUS_SPFM_SBE_Split", FaultType.SBE, self.spfm_sbe_split, is_spfm=True),
                 SplitBlock("BUS_SPFM_DBE_Split", FaultType.DBE, self.spfm_dbe_split, is_spfm=True),
                 SplitBlock("BUS_SPFM_TBE_Split", FaultType.TBE, self.spfm_tbe_split, is_spfm=True),

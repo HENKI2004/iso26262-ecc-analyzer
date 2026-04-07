@@ -72,7 +72,7 @@ class SystemBase(ABC):
 
         return self.asil_block.compute_metrics(self.total_fit, final_spfm, final_lfm)
 
-    def generate_pdf(self, filename: Optional[str] = None) -> dict[str, Any]:
+    def generate_pdf(self, filename: Optional[str] = None, merge_latent: bool = False) -> dict[str, Any]:
         """Executes the analysis while simultaneously generating a PDF visualization.
 
         Uses the Observer Pattern to decouple logic from Graphviz commands.
@@ -87,7 +87,7 @@ class SystemBase(ABC):
         if filename is None:
             filename = f"output_{self.name}"
 
-        visualizer = SafetyVisualizer(self.name)
+        visualizer = SafetyVisualizer(self.name, merge_latent=merge_latent)
 
         observable_layout = ObservableBlock(self.system_layout)
         observable_layout.attach(visualizer)
