@@ -19,7 +19,7 @@ class Events(Base):
         Args:
             name (str): The descriptive name of the component.
         """
-        dram_fit = 2300.0
+        dram_fit = total_fit
 
         self.fault_sbe = 0.7 * dram_fit
         self.fault_dbe = 0.0748 * dram_fit

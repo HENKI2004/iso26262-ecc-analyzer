@@ -29,7 +29,7 @@ class BusTrim(Base):
 
         self.lfm_sbe_split = {FaultType.SBE: 0.438}
         self.lfm_dbe_split = {FaultType.SBE: 0.496, FaultType.DBE: 0.314}
-        dram_fit = 2300.0
+        dram_fit = total_fit
         self.spfm_mbe_source = 0.001 * dram_fit
         self.spfm_az_source = 0.0748 * dram_fit
 

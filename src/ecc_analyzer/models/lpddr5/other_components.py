@@ -13,13 +13,13 @@ class OtherComponents(Base):
     single source injection block to simplify the top-level model.
     """
 
-    def __init__(self, name: str, total_fit: float):
+    def __init__(self, name: str, total_fit: float, other_fit):
         """Initializes the component and sets the constant source FIT rate.
 
         Args:
             name (str): The descriptive name of the component.
         """
-        self.total_other_fit = total_fit * 0.4523809524
+        self.total_other_fit = other_fit
         super().__init__(name, total_fit)
 
     def configure_blocks(self):

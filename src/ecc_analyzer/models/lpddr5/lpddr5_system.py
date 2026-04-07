@@ -16,6 +16,10 @@ from .sec_ded_trim import SecDedTrim
 class Lpddr5System(SystemBase):
     """Coordinates the connection of all sub-components and defines the overall system layout for LPDDR5."""
 
+    def __init__(self, name, total_fit, other_fit):
+        self.other_fit = other_fit
+        super().__init__(name, total_fit)
+
     def configure_system(self):
         """Defines the hierarchical structure of the LPDDR5 system.
 
@@ -31,4 +35,4 @@ class Lpddr5System(SystemBase):
             ],
         )
 
-        self.system_layout = SumBlock(self.name, [main_chain, OtherComponents("Other_HW", self.total_fit)])
+        self.system_layout = SumBlock(self.name, [main_chain, OtherComponents("Other_HW", self.total_fit, self.other_fit)])

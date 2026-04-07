@@ -154,24 +154,23 @@ class SystemBase(ABC):
             mode:
                 "all_vars": Alles (FIT-Raten, DCs, Splits) wird als Variable dargestellt.
                 "be_vars": Nur FIT-Raten der Basic Events sind Variablen, DCs sind Zahlen.
+                "coverage_vars": FIT-Raten sind Zahlen, nur Diagnostic Coverages (DCs) sind Variablen.
                 "numeric": Alle Werte sind eingesetzt (Formel-Check).
         """
         be_symbols = []
 
-        def collect_be_lambda(block, mode):
-            lambdas = []
+        def get_actual_total_fit(block):
+            total = 0.0
             if hasattr(block, "lambda_BE"):
-                if mode in ["all_vars", "be_vars"]:
-                    lambdas.append(sympy.Symbol(f"lambda_{block.name}_{block.fault_type.name}"))
-                else:
-                    lambdas.append(block.lambda_BE)
-            elif hasattr(block, "sub_blocks"):
+                total += block.lambda_BE
+            if hasattr(block, "sub_blocks"):
                 for sub in block.sub_blocks:
-                    lambdas.extend(collect_be_lambda(sub, mode))
-            return lambdas
+                    total += get_actual_total_fit(sub)
+            if hasattr(block, "root_block") and block.root_block:
+                total += get_actual_total_fit(block.root_block)
+            return total
 
-        all_lambdas = collect_be_lambda(self.system_layout, mode)
-        lambda_total_expr = 4200.00
+        self.total_fit = get_actual_total_fit(self.system_layout)
 
         final_spfm_exprs, final_lfm_exprs = self.system_layout.compute_symbolic_fit({}, {}, mode)
 
@@ -179,9 +178,9 @@ class SystemBase(ABC):
 
         lambda_latent_sum = sympy.Add(*final_lfm_exprs.values()) if final_lfm_exprs else sympy.Integer(0)
 
-        spfm_formula = 1 - (lambda_rf_sum / lambda_total_expr)
+        spfm_formula = 1 - (lambda_rf_sum / self.total_fit)
 
-        denominator_lfm = lambda_total_expr - lambda_rf_sum
+        denominator_lfm = self.total_fit - lambda_rf_sum
         lfm_formula = 1 - (lambda_latent_sum / denominator_lfm) if denominator_lfm != 0 else sympy.Integer(0)
 
-        return {"mode": mode, "SPFM": sympy.simplify(spfm_formula), "LFM": sympy.simplify(lfm_formula), "Lambda_RF": sympy.simplify(lambda_rf_sum), "Lambda_Total": sympy.simplify(lambda_total_expr)}
+        return {"mode": mode, "SPFM": sympy.simplify(spfm_formula), "LFM": sympy.simplify(lfm_formula), "Lambda_RF": sympy.simplify(lambda_rf_sum), "Lambda_Total": sympy.simplify(self.total_fit)}

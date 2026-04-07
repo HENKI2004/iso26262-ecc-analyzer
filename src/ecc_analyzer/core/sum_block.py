@@ -69,12 +69,10 @@ class SumBlock(BlockInterface):
         for block in self.sub_blocks:
             res_spfm, res_lfm = block.compute_symbolic_fit(spfm_exprs, lfm_exprs, mode)
 
-            # Aggregiere die SPFM Deltas
             for fault in set(res_spfm.keys()) | set(spfm_exprs.keys()):
                 delta = res_spfm.get(fault, 0) - spfm_exprs.get(fault, 0)
                 total_spfm[fault] = total_spfm.get(fault, 0) + delta
 
-            # Aggregiere die LFM Deltas
             for fault in set(res_lfm.keys()) | set(lfm_exprs.keys()):
                 delta = res_lfm.get(fault, 0) - lfm_exprs.get(fault, 0)
                 total_lfm[fault] = total_lfm.get(fault, 0) + delta

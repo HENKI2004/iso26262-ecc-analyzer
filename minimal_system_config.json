@@ -1,0 +1,57 @@
+{
+    "type": "SumBlock",
+    "name": "MinimalSystem",
+    "sub_blocks": [
+        {
+            "type": "DRAMComponent",
+            "name": "DRAM_Unit",
+            "root_block": {
+                "type": "SumBlock",
+                "name": "DRAM_Unit",
+                "sub_blocks": [
+                    {
+                        "type": "PipelineBlock",
+                        "name": "SBE_Path",
+                        "sub_blocks": [
+                            {
+                                "type": "BasicEvent",
+                                "fault_type": "SBE",
+                                "rate": 40.0,
+                                "is_spfm": true
+                            },
+                            {
+                                "type": "CoverageBlock",
+                                "target_fault": "SBE",
+                                "dc_rate_c_or_cR": 1.0,
+                                "dc_rate_latent_cL": 1.0,
+                                "is_spfm": true
+                            }
+                        ]
+                    },
+                    {
+                        "type": "BasicEvent",
+                        "fault_type": "MBE",
+                        "rate": 5.0,
+                        "is_spfm": true
+                    }
+                ]
+            }
+        },
+        {
+            "type": "OtherComponents",
+            "name": "Other_HW",
+            "root_block": {
+                "type": "PipelineBlock",
+                "name": "Other_HW",
+                "sub_blocks": [
+                    {
+                        "type": "BasicEvent",
+                        "fault_type": "OTH",
+                        "rate": 5,
+                        "is_spfm": true
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -27,7 +27,7 @@ class BusTrim(Base):
             FaultType.TBE: 0.175,
         }
 
-        dram_fit = total_fit * 0.5476190476
+        dram_fit = total_fit
         self.spfm_az_source = 0.0748 * dram_fit
         self.spfm_lb_source = 0.1
 

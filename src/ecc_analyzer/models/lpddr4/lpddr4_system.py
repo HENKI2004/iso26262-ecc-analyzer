@@ -16,6 +16,10 @@ class Lpddr4System(SystemBase):
     Coordinates the connection of all sub-components and defines the overall system layout.
     """
 
+    def __init__(self, name, total_fit, other_fit):
+        self.other_fit = other_fit
+        super().__init__(name, total_fit)
+
     def configure_system(self):
         """
         Defines the hierarchical structure of the LPDDR4 system.
@@ -33,4 +37,4 @@ class Lpddr4System(SystemBase):
             ],
         )
 
-        self.system_layout = SumBlock(self.name, [main_chain, OtherComponents("Other_HW", self.total_fit)])
+        self.system_layout = SumBlock(self.name, [main_chain, OtherComponents("Other_HW", self.total_fit, self.other_fit)])

@@ -86,7 +86,7 @@ class CoverageBlock(BlockInterface):
         new_spfm = spfm_exprs.copy()
         new_lfm = lfm_exprs.copy()
 
-        if mode == "all_vars":
+        if mode in ["all_vars", "coverage_vars"]:
             c_r_val = sympy.Symbol(f"c_R_{self.name}_{self.target_fault.name}")
             c_l_val = sympy.Symbol(f"c_L_{self.name}_{self.target_fault.name}")
         else:
@@ -96,9 +96,7 @@ class CoverageBlock(BlockInterface):
         if self.is_spfm:
             if self.target_fault in new_spfm:
                 lambda_in = new_spfm.pop(self.target_fault)
-                # Residual-Anteil
                 new_spfm[self.target_fault] = new_spfm.get(self.target_fault, 0) + lambda_in * (1.0 - c_r_val)
-                # Latent-Anteil
                 new_lfm[self.target_fault] = new_lfm.get(self.target_fault, 0) + lambda_in * (1.0 - c_l_val)
         else:
             if self.target_fault in new_lfm:

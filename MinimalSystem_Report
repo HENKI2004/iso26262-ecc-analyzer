@@ -1,0 +1,73 @@
+digraph MinimalSystem {
+	newrank=true nodesep=1.0 rankdir=BT ranksep=0.8 splines=spline
+	node [fixedsize=true height=1.0 width=1.0]
+	edge [arrowhead=none]
+	subgraph cluster_sum_2267843610896 {
+		color=gray90 fontcolor=gray50 label=MinimalSystem style=dotted
+		{
+			subgraph cluster_comp_2269886789824 {
+				bgcolor=gray96 color=gray80 label="DRAMComponent: DRAM_Unit" style=filled
+				{
+					rank=same
+				}
+				subgraph cluster_sum_2269886791168 {
+					color=gray90 fontcolor=gray50 label=DRAM_Unit style=dotted
+					{
+						subgraph cluster_pipe_2269886790832 {
+							color=gray90 fontcolor=gray50 label=SBE_Path style=dashed
+							be_SBE_Source_2269886790160 [label="SBE
+40.00" color=red fixedsize=true fontcolor=red fontsize=9 group=lane_SBE_rf height=1.0 shape=circle width=1.0]
+							cov_ECC_Layer_2269886790496 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" WIDTH="72" HEIGHT="72" FIXEDSIZE="TRUE"><TR><TD PORT="rf" WIDTH="36" HEIGHT="40" BGCOLOR="white"><FONT POINT-SIZE="8">100.0%</FONT></TD><TD PORT="latent" WIDTH="36" HEIGHT="40" BGCOLOR="white"><FONT POINT-SIZE="8">100.0%</FONT></TD></TR><TR><TD COLSPAN="2" WIDTH="72" HEIGHT="32" BGCOLOR="gray90"><B>Coverage</B></TD></TR></TABLE>> group=lane_SBE_rf shape=none]
+							be_SBE_Source_2269886790160:n -> cov_ECC_Layer_2269886790496:s [color=red minlen=2]
+						}
+						be_MBE_Source_2267843609936 [label="MBE
+5.00" color=red fixedsize=true fontcolor=red fontsize=9 group=lane_MBE_rf height=1.0 shape=circle width=1.0]
+					}
+				}
+				cov_ECC_Layer_2269886790496:rf:n -> out_2269886789824_SBE_rf:s [color=red]
+				cov_ECC_Layer_2269886790496:latent:n -> out_2269886789824_SBE_lat:s [color=blue]
+				be_MBE_Source_2267843609936:n -> out_2269886789824_MBE_rf:s [color=red]
+				{
+					rank=same
+					out_2269886789824_SBE_rf [label="Out SBE
+0.00" fillcolor=white fixedsize=false fontsize=7 group=lane_SBE_rf height=0.2 shape=rect style=filled]
+					out_2269886789824_SBE_lat [label="Out SBE
+0.00" fillcolor=white fixedsize=false fontsize=7 group=lane_SBE_latent height=0.2 shape=rect style=filled]
+					out_2269886789824_MBE_rf [label="Out MBE
+5.00" fillcolor=white fixedsize=false fontsize=7 group=lane_MBE_rf height=0.2 shape=rect style=filled]
+				}
+			}
+			subgraph cluster_comp_2267843625040 {
+				bgcolor=gray96 color=gray80 label="OtherComponents: Other_HW" style=filled
+				{
+					rank=same
+				}
+				subgraph cluster_pipe_2267843610576 {
+					color=gray90 fontcolor=gray50 label=Other_HW style=dashed
+					be_ALL_OTHER_2267843610256 [label="OTH
+5.00" color=red fixedsize=true fontcolor=red fontsize=9 group=lane_OTH_rf height=1.0 shape=circle width=1.0]
+				}
+				be_ALL_OTHER_2267843610256:n -> out_2267843625040_OTH_rf:s [color=red]
+				{
+					rank=same
+					out_2267843625040_OTH_rf [label="Out OTH
+5.00" fillcolor=white fixedsize=false fontsize=7 group=lane_OTH_rf height=0.2 shape=rect style=filled]
+				}
+			}
+		}
+	}
+	sum_TOTAL_rf_2269886789488:n -> asil_Final_Evaluation_2269886789488:s [color=red penwidth=2]
+	out_2269886789824_SBE_lat:n -> asil_Final_Evaluation_2269886789488:s [color=blue penwidth=2]
+	subgraph cluster_final_2269886789488 {
+		color=gray90 fontcolor=gray50 label="Final ASIL Evaluation" style=dashed
+		sum_TOTAL_rf_2269886789488 [label="+" color=red fixedsize=true fontcolor=red fontsize=10 group=lane_TOTAL_rf height=0.3 shape=circle width=0.3]
+		out_2267843625040_OTH_rf:n -> sum_TOTAL_rf_2269886789488:s [color=red minlen=2]
+		out_2269886789824_MBE_rf:n -> sum_TOTAL_rf_2269886789488:s [color=red minlen=2]
+		out_2269886789824_SBE_rf:n -> sum_TOTAL_rf_2269886789488:s [color=red minlen=2]
+		{
+			rank=sink
+			asil_Final_Evaluation_2269886789488 [label="Calculate
+ASIL Metrics" fillcolor=white height=1.0 penwidth=2 shape=rectangle style=filled width=1.0]
+		}
+	}
+}

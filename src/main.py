@@ -2,10 +2,11 @@
 
 # import sympy
 
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 
-from ecc_analyzer.models.lpddr4 import Lpddr4System
-from ecc_analyzer.models.lpddr5 import Lpddr5System
+# from ecc_analyzer.models.lpddr4 import Lpddr4System
+# from ecc_analyzer.models.lpddr5 import Lpddr5System
+from ecc_analyzer.models.miniSys.mini_sys import MinimalSystem
 
 
 def run_analysis_for_system(system, pipeline_name_for_detail="DRAM_Path"):
@@ -26,10 +27,10 @@ def run_analysis_for_system(system, pipeline_name_for_detail="DRAM_Path"):
     print(f" ASIL:             {metrics['ASIL_Achieved']}")
     print("=" * 60)
 
-    # pdf_name = f"{system.name}_Report"
-    # print(f"Generiere PDF: {pdf_name}.pdf ...")
-    # system.generate_pdf(pdf_name)
-    # print("Fertig.\n")
+    pdf_name = f"{system.name}_Report"
+    print(f"Generiere PDF: {pdf_name}.pdf ...")
+    system.generate_pdf(pdf_name)
+    print("Fertig.\n")
 
 
 import numpy as np
@@ -45,7 +46,7 @@ def run_dram_sensitivity_analysis(system_class, start_fit=0.01, end_fit=2500, st
         # 1. System mit der aktuellen Rate initialisieren
         # Annahme: Dein System nimmt die total_fit im Konstruktor oder
         # du passt die Events intern an.
-        system = system_class("LPDDR5_Sweep", total_fit=rate)
+        system = system_class("LPDDR5_Sweep", total_fit=rate, other_fit=1900.0)
 
         # Falls du nur die DRAM-Events ändern willst:
         # Manuelle Suche nach dem DRAM-Event Block im Layout:
@@ -63,14 +64,20 @@ def run_dram_sensitivity_analysis(system_class, start_fit=0.01, end_fit=2500, st
 
 
 def main():
-    lpddr4 = Lpddr4System("LPDDR4_System", total_fit=4220.0)
-    # run_analysis_for_system(lpddr4)
-
-    lpddr5 = Lpddr5System("LPDDR5_System", total_fit=4200.0)
-    run_analysis_for_system(lpddr5)
-
-    metrics = lpddr5.get_symbolic_metrics(mode="numeric")
+    test = MinimalSystem("MinimalSystem", 45, other_fit=5)
+    run_analysis_for_system(test)
+    test.save_to_json("minimal_system_config.json")
+    metrics = test.get_symbolic_metrics(mode="all_vars")
     print(metrics)
+
+    # lpddr4 = Lpddr4System("LPDDR4_System", total_fit=4220.0)
+    # # run_analysis_for_system(lpddr4)
+
+    # lpddr5 = Lpddr5System("LPDDR5_System", total_fit=2300.0, other_fit=1900.0)
+    # run_analysis_for_system(lpddr5)
+
+    # metrics = lpddr5.get_symbolic_metrics(mode="numeric")
+    # print(metrics)
     # spfm_expr = metrics["SPFM"]
 
     # dram_fit = 2300.0
@@ -96,24 +103,24 @@ def main():
     # print(f"Ableitung nach {target_var}:")
     # print(sympy.simplify(spfm_derivative))
 
-    rates, spfm, lfm, residual = run_dram_sensitivity_analysis(Lpddr5System)
+    # rates, spfm, lfm, residual = run_dram_sensitivity_analysis(Lpddr5System)
 
-    plt.figure(figsize=(10, 6))
+    # plt.figure(figsize=(10, 6))
 
-    # Plot SPFM und LFM
-    plt.plot(rates, spfm, label="SPFM (%)", color="red")
-    plt.plot(rates, lfm, label="LFM (%)", color="blue")
+    # # Plot SPFM und LFM
+    # plt.plot(rates, spfm, label="SPFM (%)", color="red")
+    # plt.plot(rates, lfm, label="LFM (%)", color="blue")
 
-    # ASIL D Schwellenwert (99% für SPFM)
-    plt.axhline(y=99, color="gray", linestyle="--", label="ASIL D SPFM Target (99%)")
+    # # ASIL D Schwellenwert (99% für SPFM)
+    # plt.axhline(y=99, color="gray", linestyle="--", label="ASIL D SPFM Target (99%)")
 
-    plt.xscale("log")  # Oft sinnvoll bei FIT-Sweeps
-    plt.xlabel("DRAM Fault Rate (FIT)")
-    plt.ylabel("Metric Score (%)")
-    plt.title("Sensitivity Analysis: Relative Metrics")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    # plt.xscale("log")  # Oft sinnvoll bei FIT-Sweeps
+    # plt.xlabel("DRAM Fault Rate (FIT)")
+    # plt.ylabel("Metric Score (%)")
+    # plt.title("Sensitivity Analysis: Relative Metrics")
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
 
 
 if __name__ == "__main__":
